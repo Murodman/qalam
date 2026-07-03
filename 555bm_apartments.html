@@ -1,0 +1,3244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>BM Apartments</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --blue: #007AFF;
+  --green: #30d158;
+  --red: #ff3b30;
+  --orange: #FF9F0A;
+  --purple: #5856D6;
+  --bg: #f0f2f5;
+  --card: #ffffff;
+  --label: #8e8e93;
+  --text: #1d1d1f;
+  --border: #e5e5ea;
+  --subtle: #f9f9fb;
+  --muted: #f2f2f7;
+  --sidebar-w: 220px;
+  --sidebar-bg: #1c1c1e;
+  --sidebar-text: rgba(255,255,255,0.7);
+  --sidebar-active: rgba(255,255,255,0.12);
+}
+
+body {
+  font-family: 'DM Sans', -apple-system, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+  display: flex;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ─────────────── SIDEBAR ─────────────── */
+.sidebar {
+  width: var(--sidebar-w);
+  background: var(--sidebar-bg);
+  display: flex;
+  flex-direction: column;
+  position: fixed;
+  top: 0; left: 0; bottom: 0;
+  z-index: 100;
+  overflow-y: auto;
+}
+
+.sidebar-logo {
+  padding: 22px 18px 14px;
+  display: flex; align-items: center; gap: 10px;
+  border-bottom: 1px solid rgba(255,255,255,0.07);
+  margin-bottom: 8px;
+}
+.sidebar-logo-icon {
+  width: 32px; height: 32px; border-radius: 9px;
+  background: var(--blue); display: flex; align-items: center; justify-content: center;
+  font-size: 16px; flex-shrink: 0;
+}
+.sidebar-logo-text { font-size: 15px; font-weight: 700; color: white; letter-spacing: -0.02em; }
+.sidebar-logo-sub  { font-size: 10px; color: rgba(255,255,255,0.35); margin-top: 1px; }
+
+.sidebar-section-label {
+  font-size: 9px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
+  color: rgba(255,255,255,0.25); padding: 14px 18px 6px;
+}
+
+.nav-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 14px 9px 18px;
+  cursor: pointer; border-radius: 10px;
+  margin: 1px 8px;
+  color: var(--sidebar-text);
+  font-size: 13px; font-weight: 500;
+  transition: all 0.15s; border: none; background: none; width: calc(100% - 16px);
+  text-align: left; font-family: inherit;
+}
+.nav-item:hover { background: rgba(255,255,255,0.07); color: white; }
+.nav-item.active { background: var(--sidebar-active); color: white; }
+.nav-item .nav-icon { font-size: 15px; width: 20px; text-align: center; flex-shrink: 0; }
+.nav-badge {
+  margin-left: auto; background: var(--red); color: white;
+  font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 20px;
+}
+
+.sidebar-bottom {
+  margin-top: auto;
+  padding: 12px 8px 20px;
+  border-top: 1px solid rgba(255,255,255,0.07);
+}
+.save-badge-sidebar {
+  font-size: 10px; font-weight: 600; padding: 3px 10px; border-radius: 20px;
+  background: rgba(48,209,88,0.15); color: var(--green);
+  display: none; margin: 0 10px 8px; text-align: center;
+}
+
+/* ─────────────── MAIN ─────────────── */
+.main {
+  margin-left: var(--sidebar-w);
+  flex: 1;
+  min-height: 100vh;
+  display: flex; flex-direction: column;
+}
+
+.topbar {
+  background: var(--card);
+  border-bottom: 1px solid var(--border);
+  padding: 14px 28px;
+  display: flex; align-items: center; justify-content: space-between;
+  position: sticky; top: 0; z-index: 50;
+}
+.topbar-title { font-size: 18px; font-weight: 700; letter-spacing: -0.03em; }
+.topbar-sub   { font-size: 12px; color: var(--label); margin-top: 2px; }
+.topbar-right { display: flex; align-items: center; gap: 10px; }
+
+.page { padding: 24px 28px 60px; display: none; }
+.page.active { display: block; }
+
+/* ─────────────── CARDS ─────────────── */
+.card {
+  background: var(--card);
+  border-radius: 18px;
+  padding: 20px;
+  margin-bottom: 14px;
+  box-shadow: 0 1px 8px rgba(0,0,0,0.05);
+}
+.card-label {
+  font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--label); margin-bottom: 14px;
+}
+
+/* ─────────────── OVERVIEW ─────────────── */
+.ov-grid-top { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px,1fr)); gap: 12px; margin-bottom: 14px; }
+.ov-stat {
+  background: var(--card); border-radius: 16px; padding: 18px;
+  box-shadow: 0 1px 8px rgba(0,0,0,0.05);
+}
+.ov-stat-label { font-size: 11px; font-weight: 600; color: var(--label); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px; }
+.ov-stat-val   { font-size: 28px; font-weight: 800; letter-spacing: -0.04em; font-variant-numeric: tabular-nums; }
+.ov-stat-sub   { font-size: 11px; color: var(--label); margin-top: 4px; }
+.ov-stat-icon  { font-size: 20px; margin-bottom: 8px; }
+
+.ov-grid-bot { display: grid; grid-template-columns: 1.4fr 1fr; gap: 14px; }
+
+.urgent-list { display: flex; flex-direction: column; gap: 8px; }
+.urgent-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 12px; border-radius: 12px;
+  background: var(--subtle); border: 1px solid var(--border);
+}
+.urgent-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.urgent-text { flex: 1; font-size: 13px; font-weight: 500; }
+.urgent-sub  { font-size: 11px; color: var(--label); }
+.urgent-time { font-size: 11px; font-weight: 600; color: var(--orange); }
+
+.upcoming-list { display: flex; flex-direction: column; gap: 8px; }
+.upcoming-item {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 14px; border-radius: 12px; background: var(--subtle);
+}
+.upcoming-left { display: flex; flex-direction: column; gap: 2px; }
+.upcoming-name { font-size: 13px; font-weight: 600; }
+.upcoming-date { font-size: 11px; color: var(--label); }
+.upcoming-amt  { font-size: 14px; font-weight: 700; color: var(--red); font-variant-numeric: tabular-nums; }
+
+/* ─────────────── UNIT ECONOMICS / PORTFOLIO ─────────────── */
+.ue-grid {
+  display: grid;
+  grid-template-columns: minmax(300px, 390px) 1fr;
+  gap: 16px;
+  align-items: start;
+}
+
+.section-header {
+  display: flex; gap: 12px; align-items: flex-start;
+  margin-bottom: 14px; margin-top: 6px;
+}
+.section-number {
+  width: 26px; height: 26px; border-radius: 50%;
+  background: var(--blue); color: white;
+  font-size: 13px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; margin-top: 2px;
+}
+.section-title { font-size: 15px; font-weight: 700; letter-spacing: -0.02em; }
+.section-sub   { font-size: 12px; color: var(--label); margin-top: 2px; }
+
+/* Number field */
+.num-field {
+  background: var(--subtle); border: 1.5px solid var(--border);
+  border-radius: 14px; padding: 12px 14px; margin-bottom: 10px;
+}
+.num-field.highlight {
+  background: rgba(0,122,255,0.04); border-color: rgba(0,122,255,0.25);
+}
+.num-field-label {
+  font-size: 10px; font-weight: 700; color: var(--label);
+  letter-spacing: 0.05em; text-transform: uppercase; margin-bottom: 8px;
+}
+.num-field-row  { display: flex; align-items: center; gap: 10px; }
+.stepper-btn {
+  width: 32px; height: 32px; border-radius: 10px;
+  border: 1.5px solid var(--border); background: white;
+  font-size: 18px; color: var(--blue); cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 300; flex-shrink: 0; line-height: 1; transition: background 0.1s;
+}
+.stepper-btn:hover { background: #f0f7ff; }
+.num-field-center { flex: 1; display: flex; align-items: center; justify-content: center; gap: 2px; }
+.num-prefix, .num-suffix { font-size: 18px; font-weight: 700; color: var(--label); }
+.num-input {
+  width: 80px; border: none; background: transparent;
+  font-size: 22px; font-weight: 700; color: var(--text);
+  text-align: center; outline: none;
+  font-variant-numeric: tabular-nums; letter-spacing: -0.03em; font-family: inherit;
+  -moz-appearance: textfield;
+}
+.num-input::-webkit-outer-spin-button,
+.num-input::-webkit-inner-spin-button { -webkit-appearance: none; }
+.num-hint { margin-top: 6px; font-size: 11px; color: var(--label); text-align: center; }
+
+/* Platform toggles */
+.platform-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.platform-btn {
+  padding: 12px 14px; border: 2px solid var(--border);
+  border-radius: 14px; background: white;
+  cursor: pointer; text-align: left; transition: all 0.18s; font-family: inherit;
+}
+.platform-icon  { font-size: 16px; margin-bottom: 4px; }
+.platform-name  { font-size: 13px; font-weight: 700; color: var(--text); }
+.platform-fee   { font-size: 11px; color: var(--label); margin-top: 2px; }
+.platform-check { margin-top: 6px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; }
+
+.blended-row, .total-row {
+  margin-top: 10px; background: var(--muted); border-radius: 10px;
+  padding: 8px 12px; display: flex; justify-content: space-between; align-items: center;
+}
+.blended-label { font-size: 12px; color: var(--label); }
+.blended-value { font-size: 15px; font-weight: 700; color: var(--text); }
+
+/* Employee block */
+.emp-card {
+  background: var(--subtle); border: 1.5px solid var(--border);
+  border-radius: 14px; padding: 12px 14px; margin-bottom: 10px;
+}
+.emp-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+.emp-name-input {
+  font-size: 13px; font-weight: 700; color: var(--text);
+  border: none; background: transparent; outline: none; flex: 1; font-family: inherit;
+}
+.emp-remove { font-size: 16px; color: var(--red); background: none; border: none; cursor: pointer; padding: 0 4px; }
+.add-emp-btn {
+  width: 100%; padding: 10px; border-radius: 12px;
+  border: 1.5px dashed var(--blue); background: rgba(0,122,255,0.05);
+  color: var(--blue); font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit;
+  transition: background 0.15s;
+}
+.add-emp-btn:hover { background: rgba(0,122,255,0.1); }
+
+/* Results */
+.hero-card {
+  border-radius: 20px; padding: 22px 22px 18px;
+  box-shadow: 0 6px 30px rgba(0,0,0,0.15); margin-bottom: 12px;
+}
+.hero-card.profit { background: linear-gradient(135deg, #1c1c1e 0%, #2c2c2e 100%); }
+.hero-card.loss   { background: linear-gradient(135deg, #3a0000 0%, #2c0000 100%); }
+.hero-tag    { font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 6px; }
+.hero-amount { font-size: 46px; font-weight: 800; color: white; letter-spacing: -0.05em; line-height: 1; margin-bottom: 4px; font-variant-numeric: tabular-nums; }
+.hero-period { font-size: 13px; color: rgba(255,255,255,0.5); margin-bottom: 18px; }
+.hero-grid   { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; }
+.hero-cell   { background: rgba(255,255,255,0.07); border-radius: 11px; padding: 11px 12px; }
+.hero-cell-label { font-size: 10px; color: rgba(255,255,255,0.4); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 3px; }
+.hero-cell-value { font-size: 16px; font-weight: 700; font-variant-numeric: tabular-nums; }
+
+.result-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 9px 0; border-bottom: 1px solid var(--muted);
+}
+.result-row-label { font-size: 13px; font-weight: 500; color: #3c3c43; }
+.result-row-sub   { font-size: 11px; color: var(--label); margin-top: 2px; }
+.result-row-value { font-size: 14px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.result-net { display: flex; justify-content: space-between; align-items: center; padding-top: 12px; margin-top: 4px; }
+.result-net-label { font-size: 15px; font-weight: 700; }
+.result-net-value { font-size: 20px; font-weight: 800; font-variant-numeric: tabular-nums; }
+
+.bar-segment { margin-bottom: 8px; }
+.bar-row  { display: flex; justify-content: space-between; margin-bottom: 4px; }
+.bar-lbl  { font-size: 12px; color: var(--label); }
+.bar-val  { font-size: 12px; font-weight: 600; color: var(--text); font-variant-numeric: tabular-nums; }
+.bar-track { height: 8px; background: var(--muted); border-radius: 4px; overflow: hidden; }
+.bar-fill  { height: 100%; border-radius: 4px; transition: width 0.3s ease; }
+
+.metrics-3 { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; margin-bottom: 14px; }
+.metric-card { background: var(--subtle); border-radius: 14px; padding: 14px; }
+.metric-card.warn { background: #FFF3ED; border: 1.5px solid rgba(255,159,10,0.25); }
+.metric-icon  { font-size: 16px; margin-bottom: 4px; }
+.metric-label { font-size: 10px; color: var(--label); font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
+.metric-value { font-size: 16px; font-weight: 700; color: var(--text); font-variant-numeric: tabular-nums; margin-top: 2px; }
+.metric-card-roi { background: var(--subtle); border-radius: 14px; padding: 14px; }
+.metric-card-roi .metric-label { font-size: 10px; color: var(--label); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px; }
+.metric-card-roi .metric-value { font-size: 18px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.metric-card-roi .metric-sub   { font-size: 11px; color: var(--label); margin-top: 4px; }
+
+.plat-compare-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 8px; }
+.plat-card { border-radius: 14px; padding: 12px 10px; text-align: center; border: 2px solid var(--border); background: #fafafa; transition: all 0.18s; }
+.plat-card-icon { font-size: 14px; margin-bottom: 4px; }
+.plat-card-name { font-size: 11px; font-weight: 700; margin-bottom: 2px; }
+.plat-card-fee  { font-size: 11px; color: var(--label); margin-bottom: 8px; }
+.plat-card-net  { font-size: 14px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.plat-card-mo   { font-size: 10px; color: var(--label); }
+
+.startup-total { margin-top: 12px; border-radius: 14px; overflow: hidden; }
+.startup-top { background: #1c1c1e; padding: 14px 16px; display: flex; justify-content: space-between; align-items: center; }
+.startup-label-sm { font-size: 11px; color: rgba(255,255,255,0.45); font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; }
+.startup-sub-sm   { font-size: 11px; color: rgba(255,255,255,0.35); margin-top: 3px; }
+.startup-big { font-size: 24px; font-weight: 800; color: white; font-variant-numeric: tabular-nums; }
+.startup-bottom { background: #2c2c2e; padding: 10px 16px; display: flex; justify-content: space-between; align-items: center; }
+.startup-risk-label { font-size: 11px; color: rgba(255,255,255,0.4); }
+.startup-risk-value { font-size: 13px; font-weight: 700; color: var(--orange); font-variant-numeric: tabular-nums; }
+
+.startup-breakdown-row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid var(--muted); }
+.startup-breakdown-label { font-size: 12px; color: #3c3c43; }
+.startup-breakdown-value { font-size: 12px; font-weight: 600; color: var(--text); font-variant-numeric: tabular-nums; }
+.startup-breakdown-total { display: flex; justify-content: space-between; padding-top: 10px; }
+.startup-breakdown-total span:first-child { font-size: 13px; font-weight: 700; }
+.startup-breakdown-total span:last-child  { font-size: 15px; font-weight: 800; font-variant-numeric: tabular-nums; }
+
+.section-sub-label { font-size: 10px; font-weight: 700; color: var(--label); letter-spacing: 0.05em; text-transform: uppercase; margin-bottom: 10px; }
+.warning-note  { margin-top: 8px; font-size: 11px; color: var(--orange); text-align: center; }
+.disclaimer    { text-align: center; font-size: 11px; color: #c7c7cc; margin-top: 8px; }
+.card-section-sub { font-size: 12px; color: var(--label); margin-bottom: 14px; }
+
+/* tab switcher inside pages */
+.inner-tab-switcher {
+  display: flex; background: var(--muted); border-radius: 10px; padding: 3px; gap: 2px; width: fit-content;
+}
+.inner-tab-btn {
+  padding: 6px 16px; border: none; border-radius: 8px; cursor: pointer;
+  font-size: 13px; font-weight: 600; font-family: inherit;
+  background: transparent; color: var(--label); transition: all 0.18s;
+}
+.inner-tab-btn.active { background: white; color: var(--text); box-shadow: 0 1px 4px rgba(0,0,0,0.12); }
+
+/* ─────────────── TODO ─────────────── */
+.apt-tabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 18px; }
+.apt-tab-btn {
+  padding: 7px 16px; border-radius: 20px; border: 1.5px solid var(--border);
+  background: white; cursor: pointer; font-size: 13px; font-weight: 600;
+  font-family: inherit; color: var(--label); transition: all 0.18s;
+}
+.apt-tab-btn.active { border-color: var(--blue); background: rgba(0,122,255,0.08); color: var(--blue); }
+.apt-tab-btn:hover  { border-color: var(--blue); color: var(--blue); }
+
+/* Grid layout */
+.todo-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+}
+.todo-card {
+  background: var(--card);
+  border-radius: 18px;
+  box-shadow: 0 1px 8px rgba(0,0,0,0.06);
+  display: flex; flex-direction: column;
+  overflow: hidden;
+  border-top: 3px solid transparent;
+}
+.todo-card-header {
+  padding: 14px 16px 10px;
+  display: flex; align-items: center; gap: 10px;
+  border-bottom: 1px solid var(--border);
+}
+.todo-cat-icon { font-size: 18px; flex-shrink: 0; }
+.todo-cat-name { font-size: 13px; font-weight: 700; }
+.todo-cat-count { font-size: 11px; color: var(--label); margin-top: 1px; }
+.todo-progress-bar {
+  height: 3px; background: var(--muted); margin: 0 16px 0;
+  border-radius: 2px; overflow: hidden; margin-bottom: 2px;
+}
+.todo-progress-fill { height: 100%; border-radius: 2px; transition: width 0.3s; }
+.todo-card-body { padding: 6px 8px 8px; flex: 1; overflow-y: auto; max-height: 260px; }
+
+.todo-item {
+  display: flex; align-items: center; gap: 8px;
+  padding: 7px 8px; border-radius: 10px; transition: background 0.12s;
+}
+.todo-item:hover { background: var(--subtle); }
+.todo-check {
+  width: 18px; height: 18px; border-radius: 50%;
+  border: 2px solid var(--border); cursor: pointer; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.15s; background: white;
+}
+.todo-check.done { background: var(--green); border-color: var(--green); }
+.todo-check.done::after { content: '✓'; font-size: 10px; color: white; font-weight: 700; }
+.todo-item-text { flex: 1; font-size: 12px; font-weight: 500; line-height: 1.3; }
+.todo-item-text.done { text-decoration: line-through; color: var(--label); }
+.todo-item-priority {
+  font-size: 8px; font-weight: 700; padding: 2px 6px; border-radius: 8px;
+  text-transform: uppercase; letter-spacing: 0.05em; flex-shrink: 0;
+  cursor: pointer; user-select: none;
+  transition: transform 0.1s, opacity 0.1s;
+}
+.todo-item-priority:hover { opacity: 0.75; transform: scale(1.08); }
+.prio-high   { background: rgba(255,59,48,0.1); color: var(--red); }
+.prio-medium { background: rgba(255,159,10,0.1); color: var(--orange); }
+.prio-low    { background: rgba(48,209,88,0.1); color: var(--green); }
+.todo-item-del {
+  background: none; border: none; cursor: pointer; color: var(--label);
+  font-size: 12px; padding: 0 2px; opacity: 0; transition: opacity 0.15s; flex-shrink: 0;
+}
+.todo-item:hover .todo-item-del { opacity: 1; }
+.todo-no-tasks { font-size: 12px; color: var(--label); text-align: center; padding: 16px 0; }
+
+.add-todo-row {
+  display: flex; gap: 6px; padding: 8px 8px 4px; border-top: 1px solid var(--border); margin-top: 4px;
+}
+.add-todo-input {
+  flex: 1; padding: 7px 10px; border-radius: 9px;
+  border: 1.5px solid var(--border); font-family: inherit; font-size: 12px;
+  outline: none; background: var(--subtle); min-width: 0;
+}
+.add-todo-input:focus { border-color: var(--blue); background: white; }
+.add-todo-btn {
+  padding: 7px 12px; border-radius: 9px; border: none;
+  background: var(--blue); color: white; font-size: 12px; font-weight: 600;
+  cursor: pointer; font-family: inherit; white-space: nowrap;
+}
+
+@media (max-width: 1100px) { .todo-grid { grid-template-columns: repeat(2,1fr); } }
+@media (max-width: 700px)  { .todo-grid { grid-template-columns: 1fr; } }
+
+/* ─────────────── CALENDAR ─────────────── */
+.cal-header {
+  display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px;
+}
+.cal-nav { display: flex; align-items: center; gap: 12px; }
+.cal-nav-btn {
+  width: 34px; height: 34px; border-radius: 10px; border: 1.5px solid var(--border);
+  background: white; cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center;
+}
+.cal-nav-btn:hover { background: var(--subtle); }
+.cal-month { font-size: 18px; font-weight: 700; letter-spacing: -0.02em; }
+
+.cal-platforms { display: flex; gap: 8px; flex-wrap: wrap; }
+.cal-plat-chip {
+  padding: 5px 12px; border-radius: 20px; border: 1.5px solid var(--border);
+  background: white; font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit;
+  transition: all 0.15s; display: flex; align-items: center; gap: 6px;
+}
+.cal-plat-chip.connected  { border-color: var(--green); background: rgba(48,209,88,0.08); color: #1a7a3a; }
+.cal-plat-chip.connecting { border-color: var(--orange); background: rgba(255,159,10,0.08); color: #805200; }
+
+.cal-grid { background: var(--card); border-radius: 18px; overflow: hidden; box-shadow: 0 1px 8px rgba(0,0,0,0.06); }
+.cal-weekdays { display: grid; grid-template-columns: repeat(7,1fr); background: var(--subtle); border-bottom: 1px solid var(--border); }
+.cal-wd { text-align: center; font-size: 11px; font-weight: 700; color: var(--label); padding: 10px 0; text-transform: uppercase; letter-spacing: 0.05em; }
+.cal-days { display: grid; grid-template-columns: repeat(7,1fr); }
+.cal-day {
+  min-height: 80px; padding: 6px; border-right: 1px solid var(--border); border-bottom: 1px solid var(--border);
+  position: relative;
+}
+.cal-day:nth-child(7n) { border-right: none; }
+.cal-day.other-month { background: var(--subtle); }
+.cal-day.today { background: rgba(0,122,255,0.04); }
+.cal-day-num {
+  font-size: 12px; font-weight: 600; color: var(--text); width: 24px; height: 24px;
+  border-radius: 50%; display: flex; align-items: center; justify-content: center;
+}
+.cal-day.today .cal-day-num { background: var(--blue); color: white; }
+.cal-day.other-month .cal-day-num { color: var(--label); }
+.cal-booking {
+  font-size: 10px; font-weight: 600; padding: 2px 6px; border-radius: 5px;
+  margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  cursor: pointer;
+}
+.cal-checkout-note { font-size: 9px; color: var(--label); margin-top: 2px; }
+
+.cal-legend { display: flex; gap: 16px; flex-wrap: wrap; margin-top: 14px; }
+.cal-legend-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--label); }
+.cal-legend-dot  { width: 10px; height: 10px; border-radius: 3px; }
+
+.connect-banner {
+  background: linear-gradient(135deg, #1c1c1e, #2c2c2e);
+  border-radius: 16px; padding: 20px 24px; display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 16px; gap: 16px;
+}
+.connect-banner-text { color: white; }
+.connect-banner-title { font-size: 15px; font-weight: 700; margin-bottom: 4px; }
+.connect-banner-sub   { font-size: 12px; color: rgba(255,255,255,0.5); }
+.connect-banner-btns  { display: flex; gap: 8px; flex-shrink: 0; }
+.connect-btn {
+  padding: 8px 16px; border-radius: 10px; border: none; cursor: pointer;
+  font-size: 13px; font-weight: 600; font-family: inherit; display: flex; align-items: center; gap: 6px;
+}
+.connect-btn.primary { background: var(--blue); color: white; }
+.connect-btn.secondary { background: rgba(255,255,255,0.12); color: white; }
+
+/* ─────────────── BOOKKEEPING ─────────────── */
+.bk-summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px,1fr)); gap: 12px; margin-bottom: 16px; }
+.bk-stat { background: var(--card); border-radius: 16px; padding: 18px; box-shadow: 0 1px 6px rgba(0,0,0,0.05); }
+.bk-stat-label { font-size: 10px; font-weight: 700; color: var(--label); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px; }
+.bk-stat-val   { font-size: 26px; font-weight: 800; letter-spacing: -0.04em; font-variant-numeric: tabular-nums; }
+.bk-stat-sub   { font-size: 11px; color: var(--label); margin-top: 4px; }
+
+.bk-filters { display: flex; gap: 8px; align-items: center; margin-bottom: 14px; flex-wrap: wrap; }
+.bk-filter-select {
+  padding: 7px 12px; border-radius: 10px; border: 1.5px solid var(--border);
+  font-family: inherit; font-size: 13px; background: white; outline: none; cursor: pointer;
+}
+.bk-add-btn {
+  margin-left: auto; padding: 8px 16px; border-radius: 10px; border: none;
+  background: var(--blue); color: white; font-size: 13px; font-weight: 600;
+  cursor: pointer; font-family: inherit; display: flex; align-items: center; gap: 6px;
+}
+
+.bk-table { width: 100%; border-collapse: collapse; }
+.bk-table th {
+  text-align: left; font-size: 10px; font-weight: 700; color: var(--label);
+  text-transform: uppercase; letter-spacing: 0.05em; padding: 10px 14px;
+  border-bottom: 1px solid var(--border); background: var(--subtle);
+}
+.bk-table td { padding: 11px 14px; border-bottom: 1px solid var(--muted); font-size: 13px; }
+.bk-table tr:last-child td { border-bottom: none; }
+.bk-table tr:hover td { background: var(--subtle); }
+.bk-type-badge {
+  font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 10px; text-transform: uppercase;
+}
+.type-income  { background: rgba(48,209,88,0.1); color: #1a7a3a; }
+.type-expense { background: rgba(255,59,48,0.1); color: var(--red); }
+.bk-amt-pos { font-weight: 700; color: var(--green); font-variant-numeric: tabular-nums; }
+.bk-amt-neg { font-weight: 700; color: var(--red); font-variant-numeric: tabular-nums; }
+.bk-action-btn {
+  border: none; cursor: pointer; font-size: 12px; font-weight: 600;
+  padding: 4px 10px; border-radius: 8px; font-family: inherit; transition: all 0.15s;
+}
+.bk-edit-btn  { background: rgba(0,122,255,0.08); color: var(--blue); margin-right: 4px; }
+.bk-edit-btn:hover  { background: rgba(0,122,255,0.18); }
+.bk-del-btn   { background: rgba(255,59,48,0.08); color: var(--red); }
+.bk-del-btn:hover   { background: rgba(255,59,48,0.18); }
+
+.bk-modal-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 200;
+  display: flex; align-items: center; justify-content: center;
+  display: none;
+}
+.bk-modal-overlay.open { display: flex; }
+.bk-modal {
+  background: white; border-radius: 20px; padding: 24px; width: 440px; max-width: 90vw;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+}
+.bk-modal-title { font-size: 17px; font-weight: 700; margin-bottom: 18px; }
+.bk-form-row { margin-bottom: 14px; }
+.bk-form-label { font-size: 11px; font-weight: 700; color: var(--label); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px; }
+.bk-form-input, .bk-form-select {
+  width: 100%; padding: 10px 14px; border-radius: 12px;
+  border: 1.5px solid var(--border); font-family: inherit; font-size: 14px;
+  outline: none; background: var(--subtle);
+}
+.bk-form-input:focus, .bk-form-select:focus { border-color: var(--blue); background: white; }
+.bk-form-row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.bk-modal-btns { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
+.btn-cancel { padding: 9px 18px; border-radius: 10px; border: 1.5px solid var(--border); background: white; cursor: pointer; font-size: 13px; font-weight: 600; font-family: inherit; }
+.btn-save   { padding: 9px 18px; border-radius: 10px; border: none; background: var(--blue); color: white; cursor: pointer; font-size: 13px; font-weight: 600; font-family: inherit; }
+
+/* ─────────────── BOOKING DETAIL MODAL ─────────────── */
+.booking-modal-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 300;
+  display: none; align-items: center; justify-content: center;
+  backdrop-filter: blur(2px);
+}
+.booking-modal-overlay.open { display: flex; }
+.booking-modal {
+  background: white; border-radius: 22px; width: 420px; max-width: 92vw;
+  box-shadow: 0 24px 70px rgba(0,0,0,0.22); overflow: hidden;
+}
+.booking-modal-header {
+  padding: 20px 22px 16px;
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: flex-start; justify-content: space-between;
+}
+.booking-modal-platform {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 20px;
+  text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 8px;
+}
+.booking-modal-guest { font-size: 20px; font-weight: 800; letter-spacing: -0.03em; }
+.booking-modal-apt   { font-size: 13px; color: var(--label); margin-top: 3px; }
+.booking-modal-close {
+  background: var(--muted); border: none; border-radius: 50%; width: 30px; height: 30px;
+  cursor: pointer; font-size: 14px; display: flex; align-items: center; justify-content: center;
+  color: var(--label); flex-shrink: 0; margin-left: 12px;
+}
+.booking-modal-close:hover { background: var(--border); }
+.booking-modal-body { padding: 18px 22px 22px; }
+.booking-detail-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px;
+}
+.booking-detail-cell {
+  background: var(--subtle); border-radius: 14px; padding: 12px 14px;
+}
+.booking-detail-label {
+  font-size: 10px; font-weight: 700; color: var(--label);
+  text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 4px;
+}
+.booking-detail-value { font-size: 15px; font-weight: 700; color: var(--text); }
+.booking-detail-value.money { color: var(--green); }
+.booking-detail-full {
+  background: var(--subtle); border-radius: 14px; padding: 12px 14px; margin-bottom: 10px;
+  display: flex; justify-content: space-between; align-items: center;
+}
+.booking-modal-actions { display: flex; gap: 8px; margin-top: 16px; }
+.btn-booking-delete {
+  flex: 1; padding: 10px; border-radius: 12px;
+  border: 1.5px solid rgba(255,59,48,0.3); background: rgba(255,59,48,0.06);
+  color: var(--red); font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit;
+}
+.btn-booking-delete:hover { background: rgba(255,59,48,0.12); }
+
+/* ─────────────── ADD BOOKING MODAL ─────────────── */
+.add-booking-btn {
+  padding: 8px 16px; border-radius: 10px; border: none;
+  background: var(--blue); color: white; font-size: 13px; font-weight: 600;
+  cursor: pointer; font-family: inherit; display: flex; align-items: center; gap: 6px;
+}
+.add-booking-btn:hover { background: #0066dd; }
+.day-clickable { cursor: pointer; }
+.day-clickable:hover { background: rgba(0,122,255,0.04); }
+
+/* Day-level booking list popup */
+.day-booking-list-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.35); z-index: 300;
+  display: none; align-items: center; justify-content: center;
+  backdrop-filter: blur(2px);
+}
+.day-booking-list-overlay.open { display: flex; }
+.day-booking-list-modal {
+  background: white; border-radius: 20px; width: 380px; max-width: 92vw;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.2); overflow: hidden;
+}
+.day-booking-list-header {
+  padding: 18px 20px 14px; border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+}
+.day-booking-list-title { font-size: 16px; font-weight: 700; }
+.day-booking-list-body { padding: 12px; max-height: 60vh; overflow-y: auto; }
+.day-booking-card {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 14px; border-radius: 14px; background: var(--subtle);
+  margin-bottom: 8px; cursor: pointer; border: 1.5px solid transparent;
+  transition: all 0.15s;
+}
+.day-booking-card:hover { border-color: var(--blue); background: rgba(0,122,255,0.04); }
+.day-booking-card:last-child { margin-bottom: 0; }
+.day-booking-plat-dot {
+  width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0;
+}
+.day-booking-card-info { flex: 1; }
+.day-booking-card-guest { font-size: 13px; font-weight: 700; }
+.day-booking-card-sub   { font-size: 11px; color: var(--label); margin-top: 2px; }
+.day-booking-card-amt   { font-size: 14px; font-weight: 800; color: var(--green); font-variant-numeric: tabular-nums; }
+
+@media (max-width: 900px) {
+  .ue-grid { grid-template-columns: 1fr; }
+  .ov-grid-top { grid-template-columns: repeat(2,1fr); }
+  .ov-grid-bot { grid-template-columns: 1fr; }
+  .bk-summary  { grid-template-columns: 1fr 1fr; }
+}
+
+/* ─────────────── MOBILE NAV ─────────────── */
+.hamburger-btn {
+  display: none;
+  width: 36px; height: 36px; border-radius: 10px;
+  border: 1.5px solid var(--border); background: white;
+  align-items: center; justify-content: center;
+  cursor: pointer; font-size: 18px; color: var(--text);
+  flex-shrink: 0;
+}
+.sidebar-overlay {
+  display: none;
+  position: fixed; inset: 0; z-index: 490;
+  background: rgba(0,0,0,0.45);
+  backdrop-filter: blur(2px);
+}
+.sidebar-overlay.open { display: block; }
+.sidebar-close-btn {
+  display: none;
+  position: absolute; top: 16px; right: 14px;
+  width: 30px; height: 30px; border-radius: 50%;
+  background: rgba(255,255,255,0.1); border: none;
+  color: rgba(255,255,255,0.7); font-size: 16px;
+  cursor: pointer; align-items: center; justify-content: center;
+}
+
+@media (max-width: 680px) {
+  :root { --sidebar-w: 0px; }
+
+  /* Sidebar becomes slide-in drawer */
+  .sidebar {
+    width: 270px;
+    transform: translateX(-100%);
+    transition: transform 0.28s cubic-bezier(0.4,0,0.2,1);
+    z-index: 500;
+  }
+  .sidebar.mobile-open { transform: translateX(0); }
+  .sidebar-close-btn { display: flex; }
+  .sidebar-logo { padding-right: 48px; }
+
+  /* Topbar */
+  .hamburger-btn { display: flex; }
+  .main { margin-left: 0; }
+  .topbar { padding: 11px 14px; }
+  .topbar-sub { display: none; }
+  .topbar-title { font-size: 16px; }
+  .topbar-right { gap: 8px; }
+
+  /* Pages */
+  .page { padding: 14px 12px 60px; }
+
+  /* Overview stat cards */
+  .ov-grid-top { grid-template-columns: repeat(2,1fr); gap: 8px; margin-bottom: 10px; }
+  .ov-stat { padding: 14px 12px; }
+  .ov-stat-val { font-size: 22px; }
+  .ov-stat-sub { font-size: 10px; }
+
+  /* Hero card */
+  .hero-amount { font-size: 34px; }
+  .hero-grid { grid-template-columns: repeat(2,1fr); }
+  .hero-cell { padding: 9px 10px; }
+  .hero-card { padding: 18px 16px 14px; }
+
+  /* Metrics / signals / platform compare */
+  .metrics-3 { grid-template-columns: repeat(2,1fr); gap: 8px; }
+  .plat-compare-grid { grid-template-columns: repeat(2,1fr); }
+
+  /* BK summary */
+  .bk-summary { grid-template-columns: 1fr; gap: 8px; }
+  .bk-stat { padding: 14px; }
+  .bk-stat-val { font-size: 22px; }
+
+  /* BK table */
+  .bk-table td { font-size: 12px; padding: 9px 10px; }
+  .bk-table th { font-size: 9px; padding: 8px 10px; }
+  .bk-action-btn { padding: 4px 7px; font-size: 11px; }
+
+  /* Form modal 2-col → 1-col */
+  .bk-form-row-2 { grid-template-columns: 1fr; gap: 0; }
+  .bk-modal { padding: 20px 16px; }
+
+  /* Calendar */
+  .cal-day { min-height: 52px; padding: 3px; }
+  .cal-booking { font-size: 8px; padding: 1px 3px; }
+  .cal-wd { font-size: 9px; padding: 7px 0; }
+  .cal-month { font-size: 16px; }
+  .cal-platforms { display: none; } /* hide chip status on mobile */
+  .cal-legend { gap: 10px; }
+  .cal-legend-item { font-size: 11px; }
+
+  /* Connect banner */
+  .connect-banner { flex-direction: column; gap: 12px; padding: 16px; }
+  .connect-banner-btns { flex-wrap: wrap; width: 100%; }
+  .connect-btn { flex: 1; min-width: 120px; justify-content: center; }
+
+  /* Section header */
+  .section-title { font-size: 14px; }
+  .section-sub { font-size: 11px; }
+
+  /* Card padding */
+  .card { padding: 16px 14px; }
+
+  /* Todo page header wrap */
+  #page-todo > div:first-child { flex-wrap: wrap; gap: 10px; }
+  .apt-tabs { margin-bottom: 0; }
+
+  /* Inner tab switcher full-width */
+  .inner-tab-switcher { width: 100%; }
+  .inner-tab-btn { flex: 1; text-align: center; }
+
+  /* Urgent / upcoming items */
+  .urgent-item { padding: 9px 10px; gap: 8px; }
+  .upcoming-item { padding: 9px 10px; }
+
+  /* Startup total */
+  .startup-top, .startup-bottom { padding: 12px 14px; }
+  .startup-big { font-size: 20px; }
+
+  /* Result net */
+  .result-net-value { font-size: 17px; }
+}
+
+@media (max-width: 400px) {
+  .ov-stat-val { font-size: 20px; }
+  .hero-amount { font-size: 28px; }
+  .metrics-3 { grid-template-columns: 1fr 1fr; }
+  .hero-grid { grid-template-columns: 1fr 1fr; }
+  .bk-stat-val { font-size: 19px; }
+}
+
+/* ─────────────── LOADING OVERLAY ─────────────── */
+#app-loader {
+  position: fixed; inset: 0; z-index: 9999;
+  background: #1c1c1e;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 20px;
+}
+#app-loader.hidden { display: none; }
+.loader-logo {
+  width: 56px; height: 56px; border-radius: 16px;
+  background: var(--blue); display: flex; align-items: center;
+  justify-content: center; font-size: 28px;
+}
+.loader-title { color: white; font-size: 20px; font-weight: 700; letter-spacing: -0.02em; }
+.loader-sub   { color: rgba(255,255,255,0.4); font-size: 13px; }
+.loader-spinner {
+  width: 36px; height: 36px; border-radius: 50%;
+  border: 3px solid rgba(255,255,255,0.1);
+  border-top-color: var(--blue);
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ─────────────── DB STATUS BADGE ─────────────── */
+.db-status {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 11px; font-weight: 600;
+  padding: 5px 12px; border-radius: 20px;
+  margin: 0 10px 8px;
+  background: rgba(48,209,88,0.12); color: var(--green);
+}
+.db-status.error { background: rgba(255,59,48,0.12); color: var(--red); }
+.db-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: currentColor; flex-shrink: 0;
+}
+
+/* ─────────────── ADDED BY BADGES ─────────────── */
+.bk-added-by-badge {
+  display: inline-block; padding: 2px 10px; border-radius: 20px;
+  font-size: 11px; font-weight: 700; letter-spacing: 0.02em;
+}
+.by-bobur { background: rgba(0,122,255,0.1); color: var(--blue); }
+.by-murod { background: rgba(88,86,214,0.1); color: var(--purple); }
+
+/* Added By toggle in modal */
+.bk-added-by-toggle { display: flex; gap: 8px; }
+.bk-by-btn {
+  flex: 1; padding: 8px 12px; border-radius: 10px;
+  border: 1.5px solid var(--border); background: white;
+  cursor: pointer; font-size: 13px; font-weight: 600;
+  font-family: inherit; color: var(--label); transition: all 0.15s;
+}
+.bk-by-btn[data-name="Bobur"].active { border-color: var(--blue); background: rgba(0,122,255,0.08); color: var(--blue); }
+.bk-by-btn[data-name="Murod"].active { border-color: var(--purple); background: rgba(88,86,214,0.08); color: var(--purple); }
+.bk-by-btn[data-val="yes"].active { border-color: var(--orange); background: rgba(255,159,10,0.1); color: var(--orange); }
+.bk-by-btn[data-val="no"].active  { border-color: var(--label); background: var(--muted); color: var(--text); }
+.bk-by-btn:hover { border-color: var(--blue); }
+
+/* ─────────────── APT CONTEXT MENU ─────────────── */
+.apt-ctx-menu {
+  position: fixed; z-index: 9999;
+  background: white; border-radius: 12px; padding: 5px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.18), 0 2px 8px rgba(0,0,0,0.1);
+  border: 1px solid var(--border); min-width: 200px;
+  display: none;
+}
+.apt-ctx-menu.open { display: block; }
+.apt-ctx-item {
+  display: flex; align-items: center; gap: 8px;
+  width: 100%; padding: 9px 12px; border: none; background: none;
+  cursor: pointer; font-size: 13px; font-weight: 500;
+  font-family: inherit; color: var(--text); border-radius: 8px;
+  text-align: left; transition: background 0.1s;
+}
+.apt-ctx-item:hover { background: var(--muted); }
+.apt-ctx-item.danger { color: var(--red); }
+.apt-ctx-item.danger:hover { background: rgba(255,59,48,0.07); }
+.apt-ctx-divider { height: 1px; background: var(--border); margin: 4px 0; }
+
+/* ─────────────── PAYMENTS ─────────────── */
+.pay-grid-top { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; margin-bottom: 16px; }
+.pay-stat { background: var(--card); border-radius: 16px; padding: 18px; box-shadow: 0 1px 8px rgba(0,0,0,0.05); }
+.pay-stat-icon { font-size: 20px; margin-bottom: 8px; }
+.pay-stat-label { font-size: 11px; font-weight: 600; color: var(--label); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px; }
+.pay-stat-val { font-size: 26px; font-weight: 800; letter-spacing: -0.04em; font-variant-numeric: tabular-nums; }
+.pay-stat-sub { font-size: 11px; color: var(--label); margin-top: 4px; }
+
+.pay-list { display: flex; flex-direction: column; gap: 10px; }
+.pay-item {
+  display: grid; grid-template-columns: 42px 1fr auto auto auto;
+  align-items: center; gap: 14px;
+  padding: 14px 18px; border-radius: 16px;
+  background: var(--card); border: 1.5px solid var(--border);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+  transition: box-shadow 0.15s;
+}
+.pay-item:hover { box-shadow: 0 3px 14px rgba(0,0,0,0.09); }
+.pay-item-icon { width: 42px; height: 42px; border-radius: 13px; display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; }
+.pay-item-name { font-size: 14px; font-weight: 700; }
+.pay-item-sub { font-size: 11px; color: var(--label); margin-top: 2px; }
+.pay-item-apt { font-size: 11px; font-weight: 600; color: var(--blue); margin-top: 2px; }
+.pay-due-badge {
+  font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 20px;
+  white-space: nowrap;
+}
+.pay-due-overdue  { background: rgba(255,59,48,0.1); color: var(--red); }
+.pay-due-urgent   { background: rgba(255,159,10,0.1); color: var(--orange); }
+.pay-due-upcoming { background: rgba(48,209,88,0.1); color: var(--green); }
+.pay-due-future   { background: rgba(142,142,147,0.1); color: var(--label); }
+.pay-item-amount { font-size: 16px; font-weight: 800; color: var(--red); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.pay-item-actions { display: flex; gap: 6px; }
+.pay-act-btn {
+  border: none; cursor: pointer; font-size: 12px; font-weight: 600;
+  padding: 5px 10px; border-radius: 8px; font-family: inherit;
+}
+.pay-edit-btn { background: rgba(0,122,255,0.08); color: var(--blue); }
+.pay-edit-btn:hover { background: rgba(0,122,255,0.18); }
+.pay-del-btn  { background: rgba(255,59,48,0.08); color: var(--red); }
+.pay-del-btn:hover  { background: rgba(255,59,48,0.18); }
+.pay-paid-btn { background: rgba(48,209,88,0.1); color: var(--green); }
+.pay-paid-btn:hover { background: rgba(48,209,88,0.22); }
+
+.pay-section-header {
+  display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px;
+}
+.pay-section-title { font-size: 14px; font-weight: 700; letter-spacing: -0.01em; }
+
+.pay-empty { text-align: center; padding: 32px; color: var(--label); font-size: 13px; }
+.pay-empty-icon { font-size: 32px; margin-bottom: 8px; }
+
+@media (max-width: 700px) {
+  .pay-grid-top { grid-template-columns: 1fr 1fr; }
+  .pay-item { grid-template-columns: 36px 1fr; grid-template-rows: auto auto auto; }
+  .pay-due-badge, .pay-item-amount, .pay-item-actions { grid-column: 2; }
+}
+
+/* ─────────────── CUSTOMERS ─────────────── */
+.cust-grid-top { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; margin-bottom: 16px; }
+.cust-stat { background: var(--card); border-radius: 16px; padding: 18px; box-shadow: 0 1px 8px rgba(0,0,0,0.05); }
+.cust-stat-icon { font-size: 20px; margin-bottom: 8px; }
+.cust-stat-label { font-size: 11px; font-weight: 600; color: var(--label); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px; }
+.cust-stat-val { font-size: 26px; font-weight: 800; letter-spacing: -0.04em; font-variant-numeric: tabular-nums; }
+.cust-stat-sub { font-size: 11px; color: var(--label); margin-top: 4px; }
+
+.cust-section-header {
+  display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; gap: 12px; flex-wrap: wrap;
+}
+.cust-section-title { font-size: 14px; font-weight: 700; letter-spacing: -0.01em; }
+.cust-search {
+  flex: 1; max-width: 260px; min-width: 160px;
+  background: var(--subtle); border: 1.5px solid var(--border); border-radius: 10px;
+  padding: 8px 12px; font-size: 13px; font-family: inherit; color: var(--text);
+}
+.cust-search:focus { outline: none; border-color: var(--blue); }
+.cust-header-actions { display: flex; align-items: center; gap: 10px; }
+
+.cust-list { display: flex; flex-direction: column; gap: 10px; }
+.cust-item {
+  display: grid; grid-template-columns: 44px 1.3fr 1fr auto; align-items: center; gap: 14px;
+  padding: 14px 18px; border-radius: 16px;
+  background: var(--card); border: 1.5px solid var(--border);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+  transition: box-shadow 0.15s;
+}
+.cust-item:hover { box-shadow: 0 3px 14px rgba(0,0,0,0.09); }
+.cust-avatar {
+  width: 44px; height: 44px; border-radius: 50%; flex-shrink: 0;
+  background: rgba(0,122,255,0.1); color: var(--blue);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 15px; font-weight: 700;
+}
+.cust-avatar.vip { background: rgba(255,159,10,0.14); color: var(--orange); }
+.cust-name-row { display: flex; align-items: center; gap: 6px; }
+.cust-name { font-size: 14px; font-weight: 700; }
+.cust-vip-badge {
+  font-size: 9px; font-weight: 800; letter-spacing: 0.04em; color: var(--orange);
+  background: rgba(255,159,10,0.12); padding: 2px 6px; border-radius: 6px;
+}
+.cust-contact { font-size: 11px; color: var(--label); margin-top: 3px; display: flex; gap: 10px; flex-wrap: wrap; }
+.cust-contact-empty { font-size: 11px; color: var(--label); font-style: italic; margin-top: 3px; }
+.cust-stats { font-size: 11px; color: var(--label); text-align: right; line-height: 1.6; }
+.cust-stats b { color: var(--text); font-variant-numeric: tabular-nums; }
+.cust-stats .cust-spent { color: var(--green); font-weight: 700; }
+.cust-item-actions { display: flex; gap: 6px; }
+.cust-act-btn {
+  border: none; cursor: pointer; font-size: 12px; font-weight: 600;
+  padding: 5px 10px; border-radius: 8px; font-family: inherit; white-space: nowrap;
+}
+.cust-edit-btn { background: rgba(0,122,255,0.08); color: var(--blue); }
+.cust-edit-btn:hover { background: rgba(0,122,255,0.18); }
+.cust-del-btn { background: rgba(255,59,48,0.08); color: var(--red); }
+.cust-del-btn:hover { background: rgba(255,59,48,0.18); }
+.cust-add-btn { background: rgba(48,209,88,0.1); color: var(--green); }
+.cust-add-btn:hover { background: rgba(48,209,88,0.22); }
+
+.cust-empty { text-align: center; padding: 32px; color: var(--label); font-size: 13px; }
+.cust-empty-icon { font-size: 32px; margin-bottom: 8px; }
+
+@media (max-width: 760px) {
+  .cust-grid-top { grid-template-columns: 1fr 1fr; }
+  .cust-item { grid-template-columns: 36px 1fr; grid-template-rows: auto auto auto; }
+  .cust-stats, .cust-item-actions { grid-column: 2; text-align: left; justify-content: flex-start; }
+}
+</style>
+</head>
+<body>
+
+<!-- Loading overlay -->
+<div id="app-loader">
+  <div class="loader-logo">🏢</div>
+  <div class="loader-title">BM Apartments</div>
+  <div class="loader-sub" id="loader-sub">Connecting to database…</div>
+  <div class="loader-spinner"></div>
+</div>
+
+<!-- ═══════════════ SIDEBAR ═══════════════ -->
+<nav class="sidebar" id="sidebar">
+  <button class="sidebar-close-btn" onclick="closeMobileSidebar()" aria-label="Close menu">✕</button>
+  <div class="sidebar-logo">
+    <div class="sidebar-logo-icon">🏠</div>
+    <div>
+      <div class="sidebar-logo-text">BM Apartments</div>
+      <div class="sidebar-logo-sub">Property Management</div>
+    </div>
+  </div>
+
+  <div class="sidebar-section-label">Overview</div>
+  <button class="nav-item active" data-page="overview" onclick="navTo('overview')">
+    <span class="nav-icon">📊</span> Dashboard
+  </button>
+
+  <div class="sidebar-section-label">Operations</div>
+  <button class="nav-item" data-page="unit" onclick="navTo('unit')">
+    <span class="nav-icon">🏢</span> Unit Economics
+  </button>
+  <button class="nav-item" data-page="portfolio" onclick="navTo('portfolio')">
+    <span class="nav-icon">🗂️</span> Portfolio
+  </button>
+  <button class="nav-item" data-page="todo" onclick="navTo('todo')">
+    <span class="nav-icon">✅</span> To-Do
+    <span class="nav-badge" id="todo-badge">0</span>
+  </button>
+  <button class="nav-item" data-page="calendar" onclick="navTo('calendar')">
+    <span class="nav-icon">📅</span> Calendar
+  </button>
+  <button class="nav-item" data-page="customers" onclick="navTo('customers')">
+    <span class="nav-icon">👥</span> Customers
+  </button>
+
+  <div class="sidebar-section-label">Finance</div>
+  <button class="nav-item" data-page="bookkeeping" onclick="navTo('bookkeeping')">
+    <span class="nav-icon">📒</span> Bookkeeping
+  </button>
+  <button class="nav-item" data-page="payments" onclick="navTo('payments')">
+    <span class="nav-icon">💳</span> Payments
+    <span class="nav-badge" id="pay-badge" style="display:none">0</span>
+  </button>
+
+  <div class="sidebar-bottom">
+    <div class="save-badge-sidebar" id="save-badge">✓ Saved</div>
+    <div class="db-status" id="db-status"><div class="db-dot"></div> Supabase</div>
+    <button class="nav-item" style="color:rgba(255,255,255,0.3); font-size:12px;" onclick="">
+      <span class="nav-icon">⚙️</span> Settings
+    </button>
+  </div>
+</nav>
+
+<!-- Mobile sidebar overlay -->
+<div class="sidebar-overlay" id="sidebar-overlay" onclick="closeMobileSidebar()"></div>
+
+<!-- ═══════════════ MAIN ═══════════════ -->
+<div class="main">
+
+  <!-- Topbar -->
+  <div class="topbar">
+    <div style="display:flex;align-items:center;gap:10px;">
+      <button class="hamburger-btn" id="hamburger-btn" onclick="toggleMobileSidebar()" aria-label="Open menu">☰</button>
+      <div>
+        <div class="topbar-title" id="topbar-title">Dashboard</div>
+        <div class="topbar-sub" id="topbar-sub">Welcome back — here's your portfolio at a glance</div>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <span style="font-size:12px;color:var(--label)" id="topbar-date"></span>
+    </div>
+  </div>
+
+  <!-- ══════ PAGE: OVERVIEW ══════ -->
+  <div class="page active" id="page-overview">
+    <div class="ov-grid-top" id="ov-stats"></div>
+    <div class="ov-grid-bot">
+      <div>
+        <div class="card">
+          <div class="card-label">🚨 Urgent Tasks</div>
+          <div class="urgent-list" id="ov-urgent"></div>
+        </div>
+        <div class="card">
+          <div class="card-label">💸 Monthly P&amp;L Snapshot</div>
+          <div id="ov-pl"></div>
+        </div>
+      </div>
+      <div>
+        <div class="card">
+          <div class="card-label">📆 Upcoming Costs</div>
+          <div class="upcoming-list" id="ov-upcoming"></div>
+        </div>
+        <div class="card" style="margin-top:0">
+          <div class="card-label">📋 Recent Transactions</div>
+          <div id="ov-recent-tx"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════ PAGE: UNIT ECONOMICS ══════ -->
+  <div class="page" id="page-unit">
+    <div class="ue-grid">
+      <div id="ue-inputs-col">
+        <div class="card">
+          <div class="section-header">
+            <div class="section-number">1</div>
+            <div><div class="section-title">Where will you list?</div><div class="section-sub">Tap to toggle — commission rates shown</div></div>
+          </div>
+          <div class="platform-grid" id="ue-platform-grid"></div>
+          <div class="blended-row" id="ue-blended-row" style="display:none;">
+            <span class="blended-label">Blended fee rate</span>
+            <span class="blended-value" id="ue-blended-value"></span>
+          </div>
+        </div>
+        <div class="card">
+          <div class="section-header">
+            <div class="section-number">2</div>
+            <div><div class="section-title">Revenue Inputs</div><div class="section-sub">Per apartment, per night</div></div>
+          </div>
+          <div id="ue-rate-field"></div>
+          <div id="ue-occ-field"></div>
+          <div id="ue-stay-field"></div>
+        </div>
+        <div class="card">
+          <div class="section-header">
+            <div class="section-number">3</div>
+            <div><div class="section-title">Monthly Costs</div><div class="section-sub">Per apartment — what you pay every month</div></div>
+          </div>
+          <div class="section-sub-label">🏠 Rent / Mortgage</div>
+          <div id="ue-rent-field"></div>
+          <div id="ue-utilities-field"></div>
+          <div id="ue-maintenance-field"></div>
+          <div id="ue-supplies-field"></div>
+          <div id="ue-cleaning-field"></div>
+        </div>
+        <div class="card">
+          <div class="section-header">
+            <div class="section-number">4</div>
+            <div><div class="section-title">Startup Investment</div><div class="section-sub">One-time costs to launch</div></div>
+          </div>
+          <div id="ue-education-field"></div>
+          <div id="ue-furniture-field"></div>
+          <div id="ue-linens-field"></div>
+          <div id="ue-kitchen-field"></div>
+          <div id="ue-decor-field"></div>
+          <div id="ue-smartlock-field"></div>
+          <div id="ue-photos-field"></div>
+          <div id="ue-deposit-field"></div>
+          <div id="ue-other-field"></div>
+          <div class="startup-total" id="ue-startup-total-block"></div>
+        </div>
+      </div>
+      <div id="ue-results-col">
+        <div id="ue-hero-card"></div>
+        <div class="card" style="padding:20px 22px;">
+          <div class="card-label">Return on Startup Investment</div>
+          <div class="metrics-3" id="ue-roi-metrics"></div>
+          <div style="border-top:1px solid var(--muted);padding-top:12px;">
+            <div style="font-size:11px;font-weight:600;color:var(--label);margin-bottom:8px;">Startup cost breakdown</div>
+            <div id="ue-startup-breakdown"></div>
+            <div class="startup-breakdown-total"><span>Total</span><span id="ue-startup-total-display"></span></div>
+          </div>
+        </div>
+        <div class="card" style="padding:20px 22px;">
+          <div class="card-label">Monthly P&amp;L</div>
+          <div id="ue-pl-rows"></div>
+          <div class="result-net">
+            <span class="result-net-label">Net Profit / Loss</span>
+            <span class="result-net-value" id="ue-net-profit-display"></span>
+          </div>
+        </div>
+        <div class="card" style="padding:20px 22px;">
+          <div class="card-label">Where Does Revenue Go?</div>
+          <div id="ue-bar-segments"></div>
+        </div>
+        <div class="card" style="padding:20px 22px;">
+          <div class="card-label">Key Signals</div>
+          <div class="metrics-3" id="ue-key-signals"></div>
+        </div>
+        <div class="card" style="padding:20px 22px;">
+          <div class="card-label">Platform Comparison</div>
+          <div class="card-section-sub">Net profit if 100% bookings from one OTA</div>
+          <div class="plat-compare-grid" id="ue-plat-compare"></div>
+        </div>
+        <div class="disclaimer">Estimates only — consult a financial advisor before investing</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════ PAGE: PORTFOLIO ══════ -->
+  <div class="page" id="page-portfolio">
+    <div class="ue-grid">
+      <div>
+        <div class="card">
+          <div class="section-header">
+            <div class="section-number">0</div>
+            <div><div class="section-title">Portfolio Size</div><div class="section-sub">How many apartments will you operate?</div></div>
+          </div>
+          <div id="pf-units-field"></div>
+        </div>
+        <div class="card">
+          <div class="section-header">
+            <div class="section-number">1</div>
+            <div><div class="section-title">Listings</div><div class="section-sub">Tap to toggle platforms</div></div>
+          </div>
+          <div class="platform-grid" id="pf-platform-grid"></div>
+          <div class="blended-row" id="pf-blended-row" style="display:none;">
+            <span class="blended-label">Blended fee rate</span>
+            <span class="blended-value" id="pf-blended-value"></span>
+          </div>
+        </div>
+        <div class="card">
+          <div class="section-header">
+            <div class="section-number">2</div>
+            <div><div class="section-title">Revenue Inputs</div><div class="section-sub">Per apartment, per night</div></div>
+          </div>
+          <div id="pf-rate-field"></div>
+          <div id="pf-occ-field"></div>
+          <div id="pf-stay-field"></div>
+        </div>
+        <div class="card">
+          <div class="section-header">
+            <div class="section-number">3</div>
+            <div><div class="section-title">Monthly Costs</div><div class="section-sub">Per apartment</div></div>
+          </div>
+          <div class="section-sub-label">🏠 Rent per Apartment</div>
+          <div id="pf-rent-fields"></div>
+          <div class="blended-row" id="pf-total-rent-row" style="display:none;">
+            <span class="blended-label">Total monthly rent</span>
+            <span class="blended-value" id="pf-total-rent-value"></span>
+          </div>
+          <div id="pf-utilities-field"></div>
+          <div id="pf-maintenance-field"></div>
+          <div id="pf-supplies-field"></div>
+          <div id="pf-cleaning-field"></div>
+        </div>
+        <div class="card">
+          <div class="section-header">
+            <div class="section-number" style="font-size:11px;">3b</div>
+            <div><div class="section-title">Employee Salaries</div><div class="section-sub">Monthly wages paid to your team</div></div>
+          </div>
+          <div id="pf-employees-list"></div>
+          <button class="add-emp-btn" onclick="pfAddEmployee()">+ Add Employee</button>
+          <div class="total-row" style="margin-top:12px;">
+            <span class="blended-label">Total monthly salaries</span>
+            <span class="blended-value" id="pf-salary-total-value"></span>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div id="pf-hero-card"></div>
+        <div class="card" style="padding:20px 22px;">
+          <div class="card-label">Monthly P&amp;L</div>
+          <div id="pf-pl-rows"></div>
+          <div class="result-net">
+            <span class="result-net-label">Net Profit / Loss</span>
+            <span class="result-net-value" id="pf-net-profit-display"></span>
+          </div>
+        </div>
+        <div class="card" style="padding:20px 22px;">
+          <div class="card-label">Where Does Revenue Go?</div>
+          <div id="pf-bar-segments"></div>
+        </div>
+        <div class="card" style="padding:20px 22px;">
+          <div class="card-label">Key Signals</div>
+          <div class="metrics-3" id="pf-key-signals"></div>
+        </div>
+        <div class="disclaimer">Estimates only — consult a financial advisor before investing</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════ PAGE: TODO ══════ -->
+  <div class="page" id="page-todo">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;">
+      <div class="apt-tabs" id="apt-tabs"></div>
+      <button class="add-todo-btn" onclick="addApartment()" style="white-space:nowrap;">+ Add Apartment</button>
+    </div>
+    <div id="todo-content"></div>
+  </div>
+
+  <!-- ══════ PAGE: CALENDAR ══════ -->
+  <div class="page" id="page-calendar">
+    <div class="connect-banner">
+      <div class="connect-banner-text">
+        <div class="connect-banner-title">🔗 Connect Your OTA Accounts</div>
+        <div class="connect-banner-sub">Sync bookings from Airbnb, Booking.com, VRBO and more automatically</div>
+      </div>
+      <div class="connect-banner-btns">
+        <button class="connect-btn primary" onclick="connectOTA('airbnb')">🏠 Connect Airbnb</button>
+        <button class="connect-btn secondary" onclick="connectOTA('booking')">🌐 Booking.com</button>
+        <button class="connect-btn secondary" onclick="connectOTA('vrbo')">🏡 VRBO</button>
+        <button class="connect-btn secondary" onclick="openAddBooking()" style="background:rgba(48,209,88,0.25);color:#30d158;">➕ Add Manually</button>
+      </div>
+    </div>
+
+    <div class="card" style="padding:20px 24px;">
+      <div class="cal-header">
+        <div class="cal-nav">
+          <button class="cal-nav-btn" onclick="calPrev()">‹</button>
+          <div class="cal-month" id="cal-month-label"></div>
+          <button class="cal-nav-btn" onclick="calNext()">›</button>
+        </div>
+        <div class="cal-platforms" id="cal-platform-status"></div>
+      </div>
+      <div class="cal-grid">
+        <div class="cal-weekdays">
+          <div class="cal-wd">Mon</div><div class="cal-wd">Tue</div><div class="cal-wd">Wed</div>
+          <div class="cal-wd">Thu</div><div class="cal-wd">Fri</div><div class="cal-wd">Sat</div><div class="cal-wd">Sun</div>
+        </div>
+        <div class="cal-days" id="cal-days"></div>
+      </div>
+      <div class="cal-legend">
+        <div class="cal-legend-item"><div class="cal-legend-dot" style="background:#FF385C20;border:1.5px solid #FF385C"></div> Airbnb</div>
+        <div class="cal-legend-item"><div class="cal-legend-dot" style="background:#003580;border:1.5px solid #003580"></div> Booking.com</div>
+        <div class="cal-legend-item"><div class="cal-legend-dot" style="background:#1A56DB20;border:1.5px solid #1A56DB"></div> VRBO</div>
+        <div class="cal-legend-item"><div class="cal-legend-dot" style="background:#34C75920;border:1.5px solid #34C759"></div> Direct</div>
+        <div class="cal-legend-item"><div class="cal-legend-dot" style="background:var(--muted);border:1.5px solid var(--border)"></div> Blocked</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════ PAGE: BOOKKEEPING ══════ -->
+  <div class="page" id="page-bookkeeping">
+    <div class="bk-summary" id="bk-summary"></div>
+    <div class="card" style="padding:0;overflow:hidden;">
+      <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+        <div style="font-size:14px;font-weight:700;">Transactions</div>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+          <select class="bk-filter-select" id="bk-filter-type" onchange="renderBK()">
+            <option value="all">All Types</option>
+            <option value="income">Income only</option>
+            <option value="expense">Expenses only</option>
+          </select>
+          <select class="bk-filter-select" id="bk-filter-apt" onchange="renderBK()">
+            <option value="all">All Apartments</option>
+          </select>
+          <button class="bk-add-btn" onclick="openBKModal()">+ Add Entry</button>
+        </div>
+      </div>
+      <div style="overflow-x:auto;">
+        <table class="bk-table" id="bk-table">
+          <thead>
+            <tr>
+              <th>Date</th><th>Description</th><th>Category</th><th>Apartment</th><th>Type</th><th style="text-align:right">Amount</th><th>Added By</th><th></th>
+            </tr>
+          </thead>
+          <tbody id="bk-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════ PAGE: PAYMENTS ══════ -->
+  <div class="page" id="page-payments">
+    <div class="pay-grid-top" id="pay-stats"></div>
+    <div class="card" style="padding:20px 22px;">
+      <div class="pay-section-header">
+        <div class="pay-section-title">💳 Recurring Payments</div>
+        <button class="bk-add-btn" onclick="openPayModal()">+ Add Payment</button>
+      </div>
+      <div id="pay-list-container"></div>
+    </div>
+  </div>
+
+  <!-- ══════ PAGE: CUSTOMERS ══════ -->
+  <div class="page" id="page-customers">
+    <div class="cust-grid-top" id="cust-stats"></div>
+    <div class="card" style="padding:20px 22px;">
+      <div class="cust-section-header">
+        <div class="cust-section-title">👥 Customer Database</div>
+        <div class="cust-header-actions">
+          <input type="text" class="cust-search" id="cust-search" placeholder="Search name, phone, email…" oninput="renderCustomers()" />
+          <button class="bk-add-btn" onclick="openCustomerModal()">+ Add Customer</button>
+        </div>
+      </div>
+      <div id="cust-list-container"></div>
+    </div>
+  </div>
+
+</div><!-- /main -->
+
+<!-- Day booking list modal -->
+<div class="day-booking-list-overlay" id="day-booking-list-overlay">
+  <div class="day-booking-list-modal">
+    <div class="day-booking-list-header">
+      <div class="day-booking-list-title" id="day-booking-list-title">Bookings</div>
+      <button class="booking-modal-close" onclick="closeDayList()">✕</button>
+    </div>
+    <div class="day-booking-list-body" id="day-booking-list-body"></div>
+  </div>
+</div>
+
+<!-- Booking detail modal -->
+<div class="booking-modal-overlay" id="booking-modal-overlay">
+  <div class="booking-modal">
+    <div class="booking-modal-header">
+      <div>
+        <div class="booking-modal-platform" id="bm-platform-badge"></div>
+        <div class="booking-modal-guest" id="bm-guest"></div>
+        <div class="booking-modal-apt" id="bm-apt"></div>
+      </div>
+      <button class="booking-modal-close" onclick="closeBookingModal()">✕</button>
+    </div>
+    <div class="booking-modal-body">
+      <div class="booking-detail-grid">
+        <div class="booking-detail-cell">
+          <div class="booking-detail-label">Check-in</div>
+          <div class="booking-detail-value" id="bm-checkin"></div>
+        </div>
+        <div class="booking-detail-cell">
+          <div class="booking-detail-label">Check-out</div>
+          <div class="booking-detail-value" id="bm-checkout"></div>
+        </div>
+        <div class="booking-detail-cell">
+          <div class="booking-detail-label">Nights</div>
+          <div class="booking-detail-value" id="bm-nights"></div>
+        </div>
+        <div class="booking-detail-cell">
+          <div class="booking-detail-label">Total Payout</div>
+          <div class="booking-detail-value money" id="bm-amount"></div>
+        </div>
+      </div>
+      <div class="booking-detail-full">
+        <span class="booking-detail-label" style="margin:0">Per Night</span>
+        <span class="booking-detail-value" id="bm-per-night"></span>
+      </div>
+      <div class="booking-detail-full">
+        <span class="booking-detail-label" style="margin:0">Status</span>
+        <span class="booking-detail-value" id="bm-status"></span>
+      </div>
+      <div class="booking-modal-actions">
+        <button class="btn-booking-delete" id="bm-delete-btn">🗑 Delete Booking</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Add Booking modal -->
+<div class="bk-modal-overlay" id="add-booking-overlay">
+  <div class="bk-modal">
+    <div class="bk-modal-title">➕ Add Booking</div>
+    <div class="bk-form-row">
+      <div class="bk-form-label">Guest Name</div>
+      <input type="text" class="bk-form-input" id="ab-guest" placeholder="e.g. John Smith" />
+    </div>
+    <div class="bk-form-row-2">
+      <div class="bk-form-row">
+        <div class="bk-form-label">Check-in</div>
+        <input type="date" class="bk-form-input" id="ab-start" />
+      </div>
+      <div class="bk-form-row">
+        <div class="bk-form-label">Check-out</div>
+        <input type="date" class="bk-form-input" id="ab-end" />
+      </div>
+    </div>
+    <div class="bk-form-row-2">
+      <div class="bk-form-row">
+        <div class="bk-form-label">Platform</div>
+        <select class="bk-form-select" id="ab-platform">
+          <option value="airbnb">🏠 Airbnb</option>
+          <option value="booking">🌐 Booking.com</option>
+          <option value="vrbo">🏡 VRBO</option>
+          <option value="direct">✉️ Direct</option>
+        </select>
+      </div>
+      <div class="bk-form-row">
+        <div class="bk-form-label">Apartment</div>
+        <select class="bk-form-select" id="ab-apt"></select>
+      </div>
+    </div>
+    <div class="bk-form-row">
+      <div class="bk-form-label">Total Amount ($)</div>
+      <input type="number" class="bk-form-input" id="ab-amount" placeholder="0.00" min="0" step="0.01" />
+    </div>
+    <div class="bk-modal-btns">
+      <button class="btn-cancel" onclick="closeAddBooking()">Cancel</button>
+      <button class="btn-save" onclick="saveNewBooking()">Save Booking</button>
+    </div>
+  </div>
+</div>
+
+<!-- Payment modal -->
+<div class="bk-modal-overlay" id="pay-modal-overlay">
+  <div class="bk-modal" style="max-width:480px;">
+    <div class="bk-modal-title" id="pay-modal-title">➕ Add Recurring Payment</div>
+    <div class="bk-form-row-2">
+      <div class="bk-form-row">
+        <div class="bk-form-label">Payment Name</div>
+        <input type="text" class="bk-form-input" id="pay-name" placeholder="e.g. Rent – Apt 1" />
+      </div>
+      <div class="bk-form-row">
+        <div class="bk-form-label">Category</div>
+        <select class="bk-form-select" id="pay-cat">
+          <option value="🏠 Rent">🏠 Rent</option>
+          <option value="📶 WiFi / Internet">📶 WiFi / Internet</option>
+          <option value="⚡ Electricity">⚡ Electricity</option>
+          <option value="💧 Water">💧 Water</option>
+          <option value="🔥 Gas">🔥 Gas</option>
+          <option value="🧹 Cleaning Service">🧹 Cleaning Service</option>
+          <option value="🔐 Security">🔐 Security</option>
+          <option value="📺 TV / Streaming">📺 TV / Streaming</option>
+          <option value="🏦 Insurance">🏦 Insurance</option>
+          <option value="🛠 Maintenance Contract">🛠 Maintenance Contract</option>
+          <option value="💼 Other">💼 Other</option>
+        </select>
+      </div>
+    </div>
+    <div class="bk-form-row-2">
+      <div class="bk-form-row">
+        <div class="bk-form-label">Amount ($)</div>
+        <input type="number" class="bk-form-input" id="pay-amount" placeholder="0.00" min="0" step="0.01" />
+      </div>
+      <div class="bk-form-row">
+        <div class="bk-form-label">Due Day of Month</div>
+        <input type="number" class="bk-form-input" id="pay-due-day" placeholder="e.g. 1" min="1" max="31" />
+      </div>
+    </div>
+    <div class="bk-form-row-2">
+      <div class="bk-form-row">
+        <div class="bk-form-label">Apartment</div>
+        <select class="bk-form-select" id="pay-apt"></select>
+      </div>
+      <div class="bk-form-row">
+        <div class="bk-form-label">Paid By</div>
+        <div class="bk-added-by-toggle" id="pay-by-toggle">
+          <button type="button" class="bk-by-btn" data-name="Bobur" onclick="selectPayBy('Bobur')">👤 Bobur</button>
+          <button type="button" class="bk-by-btn" data-name="Murod" onclick="selectPayBy('Murod')">👤 Murod</button>
+        </div>
+      </div>
+    </div>
+    <div class="bk-form-row">
+      <div class="bk-form-label">Notes (optional)</div>
+      <input type="text" class="bk-form-input" id="pay-notes" placeholder="e.g. auto-debit from card, landlord contact…" />
+    </div>
+    <div class="bk-modal-btns">
+      <button class="btn-cancel" onclick="closePayModal()">Cancel</button>
+      <button class="btn-save" onclick="savePayEntry()">Save Payment</button>
+    </div>
+  </div>
+</div>
+
+<!-- Customer modal -->
+<div class="bk-modal-overlay" id="cust-modal-overlay">
+  <div class="bk-modal" style="max-width:480px;">
+    <div class="bk-modal-title" id="cust-modal-title">➕ Add Customer</div>
+    <div class="bk-form-row">
+      <div class="bk-form-label">Full Name</div>
+      <input type="text" class="bk-form-input" id="cust-name" placeholder="e.g. Sarah M." />
+    </div>
+    <div class="bk-form-row-2">
+      <div class="bk-form-row">
+        <div class="bk-form-label">Phone</div>
+        <input type="text" class="bk-form-input" id="cust-phone" placeholder="e.g. +998 90 123 4567" />
+      </div>
+      <div class="bk-form-row">
+        <div class="bk-form-label">Email</div>
+        <input type="email" class="bk-form-input" id="cust-email" placeholder="e.g. sarah@email.com" />
+      </div>
+    </div>
+    <div class="bk-form-row-2">
+      <div class="bk-form-row">
+        <div class="bk-form-label">Preferred Platform</div>
+        <select class="bk-form-select" id="cust-platform">
+          <option value="">—</option>
+          <option value="airbnb">🏠 Airbnb</option>
+          <option value="booking">🌐 Booking.com</option>
+          <option value="vrbo">🏡 VRBO</option>
+          <option value="direct">✉️ Direct</option>
+        </select>
+      </div>
+      <div class="bk-form-row">
+        <div class="bk-form-label">VIP Guest</div>
+        <div class="bk-added-by-toggle" id="cust-vip-toggle">
+          <button type="button" class="bk-by-btn" data-val="no"  onclick="selectCustVip(false)">No</button>
+          <button type="button" class="bk-by-btn" data-val="yes" onclick="selectCustVip(true)">⭐ VIP</button>
+        </div>
+      </div>
+    </div>
+    <div class="bk-form-row">
+      <div class="bk-form-label">Additional Nights Stayed (manual)</div>
+      <input type="number" class="bk-form-input" id="cust-manual-nights" placeholder="0" min="0" step="1" />
+      <div class="cust-contact-empty" style="margin-top:4px;">Nights not already tracked by a booking — e.g. stays from before you started using this app.</div>
+    </div>
+    <div class="bk-form-row">
+      <div class="bk-form-label">Notes (optional)</div>
+      <input type="text" class="bk-form-input" id="cust-notes" placeholder="e.g. allergic to pets, prefers late checkout…" />
+    </div>
+    <div class="bk-modal-btns">
+      <button class="btn-cancel" onclick="closeCustomerModal()">Cancel</button>
+      <button class="btn-save" onclick="saveCustomerEntry()">Save Customer</button>
+    </div>
+  </div>
+</div>
+
+<!-- Bookkeeping modal -->
+<div class="bk-modal-overlay" id="bk-modal-overlay">
+  <div class="bk-modal">
+    <div class="bk-modal-title">Add Transaction</div>
+    <div class="bk-form-row-2">
+      <div class="bk-form-row">
+        <div class="bk-form-label">Date</div>
+        <input type="date" class="bk-form-input" id="bk-date" />
+      </div>
+      <div class="bk-form-row">
+        <div class="bk-form-label">Type</div>
+        <select class="bk-form-select" id="bk-type">
+          <option value="income">Income</option>
+          <option value="expense">Expense</option>
+        </select>
+      </div>
+    </div>
+    <div class="bk-form-row">
+      <div class="bk-form-label">Description</div>
+      <input type="text" class="bk-form-input" id="bk-desc" placeholder="e.g. Airbnb payout – Apt 1" />
+    </div>
+    <div class="bk-form-row-2">
+      <div class="bk-form-row">
+        <div class="bk-form-label">Category</div>
+        <select class="bk-form-select" id="bk-cat">
+          <option>Booking Revenue</option>
+          <option>Cleaning Fee</option>
+          <option>Rent</option>
+          <option>Utilities</option>
+          <option>Maintenance</option>
+          <option>Supplies</option>
+          <option>Salary</option>
+          <option>Platform Fee</option>
+          <option>Furniture</option>
+          <option>Other</option>
+        </select>
+      </div>
+      <div class="bk-form-row">
+        <div class="bk-form-label">Apartment</div>
+        <select class="bk-form-select" id="bk-apt-select"></select>
+      </div>
+    </div>
+    <div class="bk-form-row-2">
+      <div class="bk-form-row">
+        <div class="bk-form-label">Amount</div>
+        <input type="number" class="bk-form-input" id="bk-amount" placeholder="0.00" min="0" step="0.01" />
+      </div>
+      <div class="bk-form-row">
+        <div class="bk-form-label">Currency</div>
+        <select class="bk-form-select" id="bk-currency">
+          <option value="USD">$ USD</option>
+          <option value="UZS">so'm UZS</option>
+        </select>
+      </div>
+    </div>
+    <div class="bk-form-row">
+      <div class="bk-form-label">Added By</div>
+      <div class="bk-added-by-toggle" id="bk-added-by-toggle">
+        <button type="button" class="bk-by-btn" data-name="Bobur" onclick="selectAddedBy('Bobur')">👤 Bobur</button>
+        <button type="button" class="bk-by-btn" data-name="Murod" onclick="selectAddedBy('Murod')">👤 Murod</button>
+      </div>
+    </div>
+    <div class="bk-modal-btns">
+      <button class="btn-cancel" onclick="closeBKModal()">Cancel</button>
+      <button class="btn-save"   onclick="saveBKEntry()">Save</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════
+// CONSTANTS
+// ══════════════════════════════════════════════
+const PLATFORMS = [
+  { id: "airbnb",  label: "Airbnb",      fee: 3,  color: "#FF385C", icon: "🏠" },
+  { id: "booking", label: "Booking.com", fee: 15, color: "#003580", icon: "🌐" },
+  { id: "vrbo",    label: "VRBO",        fee: 5,  color: "#1A56DB", icon: "🏡" },
+  { id: "direct",  label: "Direct",      fee: 0,  color: "#34C759", icon: "✉️" },
+];
+
+const TODO_CATEGORIES = [
+  { id: "cleaning",  label: "Cleaning",         icon: "🧹", color: "#007AFF" },
+  { id: "keys",      label: "Key Management",   icon: "🔑", color: "#FF9F0A" },
+  { id: "linen",     label: "Linen & Towels",   icon: "🛏️", color: "#5856D6" },
+  { id: "setup",     label: "Flat Setup",       icon: "🛋️", color: "#30d158" },
+  { id: "maint",     label: "Maintenance",      icon: "🔧", color: "#FF3B30" },
+  { id: "checkin",   label: "Check-in / Out",   icon: "🚪", color: "#FF9F0A" },
+  { id: "supplies",  label: "Supplies & Stock",  icon: "🛒", color: "#34C759" },
+  { id: "admin",     label: "Admin & Paperwork", icon: "📝", color: "#8e8e93" },
+];
+
+const DEFAULT_TODOS = {
+  cleaning: [
+    { text: "Deep clean before guest arrival", priority: "high",   done: false },
+    { text: "Restock cleaning products",        priority: "medium", done: false },
+    { text: "Check and clean appliances",        priority: "low",    done: false },
+  ],
+  keys: [
+    { text: "Cut spare key set",   priority: "high",   done: false },
+    { text: "Test smart lock code", priority: "medium", done: false },
+    { text: "Leave key instructions in welcome book", priority: "low", done: false },
+  ],
+  linen: [
+    { text: "Wash and press bed linen",   priority: "high",   done: false },
+    { text: "Replace worn towels",         priority: "medium", done: false },
+    { text: "Check duvet and pillowcases", priority: "low",    done: false },
+  ],
+  setup: [
+    { text: "Welcome book updated",         priority: "medium", done: false },
+    { text: "Toiletries restocked",          priority: "high",   done: false },
+    { text: "Kitchen essentials in place",   priority: "medium", done: false },
+    { text: "WiFi password card visible",    priority: "high",   done: false },
+    { text: "Check TV and streaming apps",   priority: "low",    done: false },
+  ],
+  maint: [
+    { text: "Check all light bulbs",         priority: "low",    done: false },
+    { text: "Test smoke and CO detectors",   priority: "high",   done: false },
+    { text: "Inspect plumbing for leaks",    priority: "medium", done: false },
+  ],
+  checkin: [
+    { text: "Send check-in instructions",    priority: "high",   done: false },
+    { text: "Confirm guest arrival time",    priority: "medium", done: false },
+    { text: "Process checkout inspection",   priority: "medium", done: false },
+  ],
+  supplies: [
+    { text: "Restock coffee and tea",        priority: "medium", done: false },
+    { text: "Check toilet paper supply",     priority: "high",   done: false },
+    { text: "Replenish kitchen supplies",    priority: "medium", done: false },
+  ],
+  admin: [
+    { text: "Update listing calendar",       priority: "high",   done: false },
+    { text: "Reply to guest reviews",        priority: "medium", done: false },
+    { text: "Check upcoming booking fees",   priority: "low",    done: false },
+  ],
+};
+
+const STORAGE_KEY = "str-manager-v2";
+
+// ══════════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════════
+let state = {
+  // Economics
+  platforms: ["airbnb", "booking"],
+  nightlyRate: 120,
+  occupancy: 65,
+  stayLength: 3,
+  rent: 1400,
+  utilities: 120,
+  maintenance: 80,
+  supplies: 50,
+  cleaningFee: 60,
+  education: 200,
+  furniture: 1500,
+  linens: 300,
+  kitchen: 300,
+  decor: 200,
+  smartLock: 150,
+  photos: 200,
+  deposit: 2800,
+  otherSetup: 200,
+
+  // Portfolio
+  pf: {
+    platforms: ["airbnb", "booking"],
+    units: 2,
+    nightlyRate: 120,
+    occupancy: 65,
+    stayLength: 3,
+    apartmentRents: [1400, 1200],
+    employees: [{ name: "Manager", salary: 2000 }],
+    utilities: 120,
+    maintenance: 80,
+    supplies: 50,
+    cleaningFee: 60,
+  },
+
+  // Apartments
+  apartments: [
+    { name: "Apt 1 – City Centre", todos: JSON.parse(JSON.stringify(DEFAULT_TODOS)) },
+    { name: "Apt 2 – Old Town",    todos: JSON.parse(JSON.stringify(DEFAULT_TODOS)) },
+  ],
+  activeApt: 0,
+
+  // Calendar
+  calYear: new Date().getFullYear(),
+  calMonth: new Date().getMonth(),
+  connectedOTAs: [],
+  bookings: generateSampleBookings(),
+
+  // Bookkeeping
+  transactions: generateSampleTransactions(),
+
+  // Recurring payments
+  payments: [
+    { id:1, name:"Rent – Apt 1",      cat:"🏠 Rent",             amount:1400, dueDay:1,  apt:"Apt 1 – City Centre", paidBy:"Bobur", notes:"" },
+    { id:2, name:"Rent – Apt 2",      cat:"🏠 Rent",             amount:1200, dueDay:1,  apt:"Apt 2 – Old Town",    paidBy:"Murod", notes:"" },
+    { id:3, name:"WiFi – Apt 1",      cat:"📶 WiFi / Internet",  amount:25,   dueDay:5,  apt:"Apt 1 – City Centre", paidBy:"Bobur", notes:"Provider: UzTelecom" },
+    { id:4, name:"Electricity – Apt 2",cat:"⚡ Electricity",     amount:60,   dueDay:10, apt:"Apt 2 – Old Town",    paidBy:"Murod", notes:"" },
+  ],
+
+  // Customers
+  customers: [],
+  customerHidden: [],
+};
+
+function generateSampleBookings() {
+  const now = new Date();
+  const y = now.getFullYear(), m = now.getMonth();
+  return [
+    { id:1, start: new Date(y,m,2),  end: new Date(y,m,5),  guest:"Sarah M.",   platform:"airbnb",  apt:"Apt 1", amount:480 },
+    { id:2, start: new Date(y,m,7),  end: new Date(y,m,10), guest:"John K.",    platform:"booking", apt:"Apt 1", amount:360 },
+    { id:3, start: new Date(y,m,3),  end: new Date(y,m,7),  guest:"Emma L.",    platform:"vrbo",    apt:"Apt 2", amount:520 },
+    { id:4, start: new Date(y,m,14), end: new Date(y,m,18), guest:"David R.",   platform:"airbnb",  apt:"Apt 1", amount:600 },
+    { id:5, start: new Date(y,m,20), end: new Date(y,m,23), guest:"Maria S.",   platform:"direct",  apt:"Apt 2", amount:420 },
+    { id:6, start: new Date(y,m,25), end: new Date(y,m,28), guest:"Alex T.",    platform:"booking", apt:"Apt 1", amount:390 },
+    { id:7, start: new Date(y,m,10), end: new Date(y,m,14), guest:"Nina P.",    platform:"airbnb",  apt:"Apt 2", amount:550 },
+  ];
+}
+
+function generateSampleTransactions() {
+  const now = new Date();
+  const y = now.getFullYear(), m = now.getMonth();
+  const d = (day) => `${y}-${String(m+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+  return [
+    { id:1, date:d(1),  desc:"Airbnb payout – Apt 1",     cat:"Booking Revenue", apt:"Apt 1", type:"income",  amount:480,  addedBy:"Bobur" },
+    { id:2, date:d(1),  desc:"Monthly rent – Apt 1",       cat:"Rent",            apt:"Apt 1", type:"expense", amount:1400, addedBy:"Murod" },
+    { id:3, date:d(2),  desc:"Monthly rent – Apt 2",       cat:"Rent",            apt:"Apt 2", type:"expense", amount:1200, addedBy:"Murod" },
+    { id:4, date:d(3),  desc:"VRBO payout – Apt 2",        cat:"Booking Revenue", apt:"Apt 2", type:"income",  amount:520,  addedBy:"Bobur" },
+    { id:5, date:d(5),  desc:"Cleaning service – Apt 1",   cat:"Cleaning Fee",    apt:"Apt 1", type:"expense", amount:120,  addedBy:"Bobur" },
+    { id:6, date:d(8),  desc:"Booking.com payout – Apt 1", cat:"Booking Revenue", apt:"Apt 1", type:"income",  amount:360,  addedBy:"Murod" },
+    { id:7, date:d(10), desc:"Utilities – Apt 1",          cat:"Utilities",       apt:"Apt 1", type:"expense", amount:120,  addedBy:"Bobur" },
+    { id:8, date:d(10), desc:"Utilities – Apt 2",          cat:"Utilities",       apt:"Apt 2", type:"expense", amount:110,  addedBy:"Murod" },
+    { id:9, date:d(12), desc:"Supplies restock – Apt 2",   cat:"Supplies",        apt:"Apt 2", type:"expense", amount:65,   addedBy:"Bobur" },
+    { id:10,date:d(14), desc:"Airbnb payout – Apt 1",      cat:"Booking Revenue", apt:"Apt 1", type:"income",  amount:600,  addedBy:"Murod" },
+    { id:11,date:d(15), desc:"Manager salary",              cat:"Salary",          apt:"All",   type:"expense", amount:2000, addedBy:"Bobur" },
+    { id:12,date:d(20), desc:"Direct booking – Apt 2",     cat:"Booking Revenue", apt:"Apt 2", type:"income",  amount:420,  addedBy:"Murod" },
+    { id:13,date:d(18), desc:"Local handyman – Apt 2",     cat:"Maintenance",     apt:"Apt 2", type:"expense", amount:850000, addedBy:"Murod", currency:"UZS" },
+  ].map(t => ({ currency: "USD", ...t }));
+}
+
+// ══════════════════════════════════════════════
+// FORMATTERS
+// ══════════════════════════════════════════════
+const fmt = n => {
+  const abs = Math.abs(n);
+  const s = abs.toLocaleString("en-US", {minimumFractionDigits:0, maximumFractionDigits:0});
+  return n < 0 ? `-$${s}` : `$${s}`;
+};
+// Currency-aware formatter for bookkeeping entries. USD and UZS are always
+// formatted and totalled separately — never converted or added together —
+// so the two currencies never get confused with each other.
+const fmtCur = (n, currency="USD") => {
+  const abs = Math.abs(n);
+  const s = abs.toLocaleString("en-US", {minimumFractionDigits:0, maximumFractionDigits:0});
+  if (currency === "UZS") return `${n<0?"-":""}${s} so'm`;
+  return n < 0 ? `-$${s}` : `$${s}`;
+};
+const pct = n => `${n.toFixed(1)}%`;
+const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+
+// ══════════════════════════════════════════════
+// NAVIGATION
+// ══════════════════════════════════════════════
+const PAGE_META = {
+  overview:    { title: "Dashboard",     sub: "Welcome back — here's your portfolio at a glance" },
+  unit:        { title: "Unit Economics",sub: "Model one apartment's profitability" },
+  portfolio:   { title: "Portfolio",     sub: "Multi-unit operations overview" },
+  todo:        { title: "To-Do",         sub: "Task management per apartment" },
+  calendar:    { title: "Calendar",      sub: "Booking calendar across all OTAs" },
+  customers:   { title: "Customers",     sub: "Guest database and stay history" },
+  bookkeeping: { title: "Bookkeeping",   sub: "Track income and expenses" },
+  payments:    { title: "Payments",      sub: "Recurring monthly bills and obligations" },
+};
+
+function navTo(page) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-'+page).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(b => b.classList.toggle('active', b.dataset.page===page));
+  const meta = PAGE_META[page] || {};
+  document.getElementById('topbar-title').textContent = meta.title || page;
+  document.getElementById('topbar-sub').textContent   = meta.sub   || '';
+  if (page === 'overview')    renderOverview();
+  if (page === 'todo')        renderTodo();
+  if (page === 'calendar')    renderCalendar();
+  if (page === 'bookkeeping') renderBK();
+  if (page === 'payments')    renderPayments();
+  if (page === 'customers')   renderCustomers();
+  closeMobileSidebar();
+}
+
+// ══════════════════════════════════════════════
+// MOBILE SIDEBAR
+// ══════════════════════════════════════════════
+function toggleMobileSidebar() {
+  const sidebar = document.getElementById('sidebar');
+  const overlay = document.getElementById('sidebar-overlay');
+  const isOpen  = sidebar.classList.contains('mobile-open');
+  isOpen ? closeMobileSidebar() : openMobileSidebar();
+}
+function openMobileSidebar() {
+  document.getElementById('sidebar').classList.add('mobile-open');
+  document.getElementById('sidebar-overlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closeMobileSidebar() {
+  document.getElementById('sidebar').classList.remove('mobile-open');
+  document.getElementById('sidebar-overlay').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+// ══════════════════════════════════════════════
+// CALC ENGINE
+// ══════════════════════════════════════════════
+function calcUnit() {
+  const { nightlyRate:rate, occupancy:occ, stayLength, cleaningFee, utilities, maintenance, supplies, platforms:pl, rent } = state;
+  const bookedNights = 30 * (occ/100);
+  const stays        = Math.max(1, Math.round(bookedNights / stayLength));
+  const grossRevenue = bookedNights * rate;
+  const blendedFee   = pl.length===0 ? 0 : PLATFORMS.filter(p=>pl.includes(p.id)).reduce((s,p)=>s+p.fee,0)/pl.length;
+  const platformFees = grossRevenue * (blendedFee/100);
+  const cleaningTotal= stays * cleaningFee;
+  const fixedCosts   = rent + utilities + maintenance + supplies;
+  const totalCosts   = platformFees + cleaningTotal + fixedCosts;
+  const netProfit    = grossRevenue - totalCosts;
+  const margin       = grossRevenue > 0 ? (netProfit/grossRevenue)*100 : 0;
+  const netRPNight   = rate*(1-blendedFee/100) - cleaningFee/Math.max(1,stayLength);
+  const beOcc        = fixedCosts / Math.max(1,netRPNight) / 30 * 100;
+  return { bookedNights, stays, grossRevenue, platformFees, blendedFee, cleaningTotal, fixedCosts, totalCosts, netProfit, margin, beOcc:Math.max(0,Math.min(100,beOcc)), rentCost:rent, salaryCost:0 };
+}
+
+function calcPortfolio() {
+  const pf = state.pf;
+  const u  = pf.units;
+  const { nightlyRate:rate, occupancy:occ, stayLength, cleaningFee, utilities, maintenance, supplies, platforms:pl, apartmentRents, employees } = pf;
+  const totalRent     = apartmentRents.reduce((s,r)=>s+r,0);
+  const totalSalaries = employees.reduce((s,e)=>s+e.salary,0);
+  const bookedNights  = 30*(occ/100);
+  const stays         = Math.max(1, Math.round(bookedNights/stayLength));
+  const grossRevenue  = bookedNights*rate*u;
+  const blendedFee    = pl.length===0 ? 0 : PLATFORMS.filter(p=>pl.includes(p.id)).reduce((s,p)=>s+p.fee,0)/pl.length;
+  const platformFees  = grossRevenue*(blendedFee/100);
+  const cleaningTotal = stays*cleaningFee*u;
+  const fixedCosts    = totalRent + (utilities+maintenance+supplies)*u + totalSalaries;
+  const totalCosts    = platformFees + cleaningTotal + fixedCosts;
+  const netProfit     = grossRevenue - totalCosts;
+  const margin        = grossRevenue > 0 ? (netProfit/grossRevenue)*100 : 0;
+  const netRPNight    = rate*(1-blendedFee/100) - cleaningFee/Math.max(1,stayLength);
+  const beOcc         = (fixedCosts/Math.max(1,u)) / Math.max(1,netRPNight) / 30 * 100;
+  return { bookedNights, stays, grossRevenue, platformFees, blendedFee, cleaningTotal, fixedCosts, totalCosts, netProfit, margin, beOcc:Math.max(0,Math.min(100,beOcc)), rentCost:totalRent, salaryCost:totalSalaries };
+}
+
+// ══════════════════════════════════════════════
+// NUMBER FIELD FACTORY
+// ══════════════════════════════════════════════
+function makeNumberField(container, { label, getValue, setValue, min=0, max=99999, step=1, prefix="", suffix="", hint, highlight }, onUpdate) {
+  const wrap = document.createElement("div");
+  wrap.className = "num-field" + (highlight ? " highlight" : "");
+  wrap.innerHTML = `
+    <div class="num-field-label">${label}</div>
+    <div class="num-field-row">
+      <button class="stepper-btn dec">−</button>
+      <div class="num-field-center">
+        ${prefix ? `<span class="num-prefix">${prefix}</span>` : ""}
+        <input class="num-input" type="number" min="${min}" max="${max}" step="${step}" value="${getValue()}" />
+        ${suffix ? `<span class="num-suffix">${suffix}</span>` : ""}
+      </div>
+      <button class="stepper-btn inc">+</button>
+    </div>
+    ${hint ? `<div class="num-hint hint-text">${typeof hint==='function'?hint():hint}</div>` : ""}
+  `;
+  const input = wrap.querySelector("input");
+  const hintEl= wrap.querySelector(".hint-text");
+  const refresh= () => { if (hintEl && typeof hint==="function") hintEl.textContent = hint(); };
+  wrap.querySelector(".dec").addEventListener("click",()=>{ setValue(Math.max(min,getValue()-step)); input.value=getValue(); refresh(); if(onUpdate) onUpdate(); });
+  wrap.querySelector(".inc").addEventListener("click",()=>{ setValue(Math.min(max,getValue()+step)); input.value=getValue(); refresh(); if(onUpdate) onUpdate(); });
+  input.addEventListener("input",()=>{
+    const raw=input.value; if(raw===""||raw==="-") return;
+    const v=Number(raw); if(!isNaN(v)){ setValue(Math.min(max,Math.max(min,v))); refresh(); if(onUpdate) onUpdate(); }
+  });
+  input.addEventListener("blur",()=>{
+    const v=Number(input.value);
+    if(!isNaN(v)) input.value=Math.min(max,Math.max(min,v));
+    else input.value=getValue();
+  });
+  container.innerHTML=""; container.appendChild(wrap);
+  return () => { input.value=getValue(); refresh(); };
+}
+
+// ══════════════════════════════════════════════
+// PLATFORM TOGGLE
+// ══════════════════════════════════════════════
+function buildPlatforms(gridId, getList, setList, onUpdate) {
+  const grid = document.getElementById(gridId);
+  grid.innerHTML="";
+  PLATFORMS.forEach(p=>{
+    const active=getList().includes(p.id);
+    const btn=document.createElement("button");
+    btn.className="platform-btn";
+    btn.style.border=`2px solid ${active?p.color:"var(--border)"}`;
+    btn.style.background=active?`${p.color}12`:"white";
+    btn.innerHTML=`
+      <div class="platform-icon">${p.icon}</div>
+      <div class="platform-name" style="color:${active?p.color:"var(--text)"}">${p.label}</div>
+      <div class="platform-fee">${p.fee===0?"No commission":`${p.fee}% commission`}</div>
+      ${active?`<div class="platform-check" style="color:${p.color}">✓ Selected</div>`:""}
+    `;
+    btn.addEventListener("click",()=>{
+      const cur=getList();
+      setList(cur.includes(p.id) ? cur.filter(x=>x!==p.id) : [...cur,p.id]);
+      buildPlatforms(gridId,getList,setList,onUpdate);
+      if(onUpdate) onUpdate();
+    });
+    grid.appendChild(btn);
+  });
+}
+
+// ══════════════════════════════════════════════
+// UNIT ECONOMICS PAGE
+// ══════════════════════════════════════════════
+function buildUEPage() {
+  buildPlatforms("ue-platform-grid", ()=>state.platforms, v=>state.platforms=v, renderUE);
+
+  const mkF = (id,opts) => makeNumberField(document.getElementById(id), opts, renderUE);
+
+  mkF("ue-rate-field",     { label:"Nightly Rate",        getValue:()=>state.nightlyRate,  setValue:v=>state.nightlyRate=v,   min:10,max:2000,step:5,prefix:"$",highlight:true });
+  mkF("ue-occ-field",      { label:"Occupancy Rate",       getValue:()=>state.occupancy,    setValue:v=>state.occupancy=v,     min:1,max:100,suffix:"%" });
+  mkF("ue-stay-field",     { label:"Avg Stay (nights)",    getValue:()=>state.stayLength,   setValue:v=>state.stayLength=v,    min:1,max:30,suffix:" nights" });
+  mkF("ue-rent-field",     { label:"Rent / Mortgage",      getValue:()=>state.rent,         setValue:v=>state.rent=v,          min:0,max:20000,step:50,prefix:"$",highlight:true });
+  mkF("ue-utilities-field",{ label:"Utilities + Internet", getValue:()=>state.utilities,    setValue:v=>state.utilities=v,     min:0,max:1000,step:10,prefix:"$" });
+  mkF("ue-maintenance-field",{label:"Maintenance Reserve", getValue:()=>state.maintenance,  setValue:v=>state.maintenance=v,   min:0,max:1000,step:10,prefix:"$" });
+  mkF("ue-supplies-field", { label:"Supplies + Fixed",     getValue:()=>state.supplies,     setValue:v=>state.supplies=v,      min:0,max:1000,step:10,prefix:"$" });
+  mkF("ue-cleaning-field", { label:"Cleaning Fee/Stay",    getValue:()=>state.cleaningFee,  setValue:v=>state.cleaningFee=v,   min:0,max:500,step:5,prefix:"$" });
+  mkF("ue-education-field",{ label:"Learning & Courses",   getValue:()=>state.education,    setValue:v=>state.education=v,     min:0,max:5000,step:50,prefix:"$",highlight:true });
+  mkF("ue-furniture-field",{ label:"Furniture",            getValue:()=>state.furniture,    setValue:v=>state.furniture=v,     min:0,max:20000,step:50,prefix:"$" });
+  mkF("ue-linens-field",   { label:"Linens & Towels",      getValue:()=>state.linens,       setValue:v=>state.linens=v,        min:0,max:2000,step:25,prefix:"$" });
+  mkF("ue-kitchen-field",  { label:"Kitchen & Appliances", getValue:()=>state.kitchen,      setValue:v=>state.kitchen=v,       min:0,max:5000,step:50,prefix:"$" });
+  mkF("ue-decor-field",    { label:"Decor & Staging",      getValue:()=>state.decor,        setValue:v=>state.decor=v,         min:0,max:3000,step:50,prefix:"$" });
+  mkF("ue-smartlock-field",{ label:"Smart Lock & Tech",    getValue:()=>state.smartLock,    setValue:v=>state.smartLock=v,     min:0,max:1000,step:25,prefix:"$" });
+  mkF("ue-photos-field",   { label:"Professional Photos",  getValue:()=>state.photos,       setValue:v=>state.photos=v,        min:0,max:1000,step:25,prefix:"$" });
+  mkF("ue-deposit-field",  { label:"Security Deposit",     getValue:()=>state.deposit,      setValue:v=>state.deposit=v,       min:0,max:20000,step:100,prefix:"$" });
+  mkF("ue-other-field",    { label:"Other Setup",          getValue:()=>state.otherSetup,   setValue:v=>state.otherSetup=v,    min:0,max:5000,step:50,prefix:"$" });
+  renderUE();
+}
+
+function renderUE() {
+  const e = calcUnit();
+  const blended = state.platforms.length===0 ? 0 : PLATFORMS.filter(p=>state.platforms.includes(p.id)).reduce((s,p)=>s+p.fee,0)/state.platforms.length;
+  const nonRef  = state.education+state.furniture+state.linens+state.kitchen+state.decor+state.smartLock+state.photos+state.otherSetup;
+  const totalSU = nonRef + state.deposit;
+  const cashAtR = nonRef;
+  const payback = e.netProfit>0 ? cashAtR/e.netProfit : null;
+  const roi     = cashAtR>0 ? (e.netProfit*12)/cashAtR*100 : 0;
+  const pc      = e.netProfit>=0?"var(--green)":"var(--red)";
+  const mc      = e.margin>20?"var(--green)":e.margin>0?"var(--orange)":"var(--red)";
+
+  document.getElementById("ue-blended-row").style.display = state.platforms.length>0 ? "" : "none";
+  document.getElementById("ue-blended-value").textContent = pct(blended);
+
+  document.getElementById("ue-hero-card").innerHTML=`
+    <div class="hero-card ${e.netProfit>=0?"profit":"loss"}">
+      <div class="hero-tag" style="color:${e.netProfit>=0?"var(--green)":"#ff6b6b"}">Monthly Net Result</div>
+      <div class="hero-amount">${fmt(e.netProfit)}</div>
+      <div class="hero-period">per month · ${fmt(e.netProfit*12)} per year</div>
+      <div class="hero-grid">
+        <div class="hero-cell"><div class="hero-cell-label">Revenue</div><div class="hero-cell-value" style="color:rgba(255,255,255,0.9)">${fmt(e.grossRevenue)}</div></div>
+        <div class="hero-cell"><div class="hero-cell-label">All Costs</div><div class="hero-cell-value" style="color:#ff6b6b">${fmt(e.totalCosts)}</div></div>
+        <div class="hero-cell"><div class="hero-cell-label">Margin</div><div class="hero-cell-value" style="color:${mc}">${pct(e.margin)}</div></div>
+      </div>
+    </div>`;
+
+  const rcol=(v)=>v&&v<18?"var(--green)":v?"var(--orange)":"var(--red)";
+  document.getElementById("ue-roi-metrics").innerHTML=`
+    <div class="metric-card-roi"><div class="metric-label">Cash at Risk</div><div class="metric-value" style="color:var(--orange)">${fmt(cashAtR)}</div><div class="metric-sub">excl. refundable deposit</div></div>
+    <div class="metric-card-roi"><div class="metric-label">Payback</div><div class="metric-value" style="color:${rcol(payback)}">${payback?(payback<1?"<1 mo":payback<24?payback.toFixed(1)+" mo":(payback/12).toFixed(1)+" yrs"):"Never"}</div><div class="metric-sub">${payback?"to recover startup":"not profitable yet"}</div></div>
+    <div class="metric-card-roi"><div class="metric-label">Annual ROI</div><div class="metric-value" style="color:${roi>30?"var(--green)":roi>10?"var(--orange)":"var(--red)"}">${cashAtR>0?pct(roi):"—"}</div><div class="metric-sub">on cash invested</div></div>`;
+
+  const bi=[["Learning",state.education],["Furniture",state.furniture],["Linens",state.linens],["Kitchen",state.kitchen],["Decor",state.decor],["Smart Lock",state.smartLock],["Photos",state.photos],["Other",state.otherSetup],["Deposit (refundable)",state.deposit]].filter(r=>r[1]>0);
+  document.getElementById("ue-startup-breakdown").innerHTML=bi.map(([l,v])=>`<div class="startup-breakdown-row"><span class="startup-breakdown-label">${l}</span><span class="startup-breakdown-value">${fmt(v)}</span></div>`).join("");
+  document.getElementById("ue-startup-total-display").textContent=fmt(totalSU);
+  document.getElementById("ue-startup-total-block").innerHTML=`
+    <div class="startup-top"><div><div class="startup-label-sm">Total Out-of-Pocket</div><div class="startup-sub-sm">incl. ${fmt(state.deposit)} refundable deposit</div></div><div class="startup-big">${fmt(totalSU)}</div></div>
+    <div class="startup-bottom"><div class="startup-risk-label">Cash actually at risk (excl. deposit)</div><div class="startup-risk-value">${fmt(cashAtR)}</div></div>`;
+
+  document.getElementById("ue-pl-rows").innerHTML=`
+    ${plRow("Gross Revenue",fmt(e.grossRevenue),"var(--green)")}
+    ${plRow(`Platform Fees (${pct(blended)} avg)`,"- "+fmt(e.platformFees),"var(--red)","Charged by OTAs")}
+    ${plRow(`Cleaning (${e.stays} stays × ${fmt(state.cleaningFee)})`,"- "+fmt(e.cleaningTotal),"var(--orange)")}
+    ${plRow("Rent / Mortgage","- "+fmt(e.rentCost),"var(--blue)","Biggest fixed cost")}
+    ${plRow("Utilities + Ops","- "+fmt(state.utilities+state.maintenance+state.supplies),"var(--blue)")}`;
+  document.getElementById("ue-net-profit-display").textContent=fmt(e.netProfit);
+  document.getElementById("ue-net-profit-display").style.color=pc;
+
+  document.getElementById("ue-bar-segments").innerHTML=[
+    ["Net Profit",Math.max(0,e.netProfit),e.grossRevenue,"var(--green)"],
+    ["Platform Fees",e.platformFees,e.grossRevenue,"#FF385C"],
+    ["Cleaning",e.cleaningTotal,e.grossRevenue,"var(--orange)"],
+    ["Fixed Costs",e.fixedCosts,e.grossRevenue,"var(--blue)"],
+  ].map(([l,v,t,c])=>barSeg(l,v,t,c)).join("");
+
+  const sigs=[
+    {label:"Booked Nights",value:e.bookedNights.toFixed(0)+" nights",icon:"🌙",warn:false},
+    {label:"Guest Stays",value:e.stays+" stays",icon:"👤",warn:false},
+    {label:"Breakeven Occ.",value:e.beOcc.toFixed(0)+"%",icon:"⚖️",warn:e.beOcc>=state.occupancy},
+    {label:"RevPAN",value:fmt(e.grossRevenue/30),icon:"📊",warn:false},
+    {label:"Annual Net",value:fmt(e.netProfit*12),icon:"📅",warn:false},
+    {label:"Annual ROI",value:cashAtR>0?pct(roi):"—",icon:"💰",warn:false},
+  ];
+  document.getElementById("ue-key-signals").innerHTML=sigs.map(s=>`<div class="metric-card${s.warn?" warn":""}"><div class="metric-icon">${s.icon}</div><div class="metric-label">${s.label}</div><div class="metric-value">${s.value}</div></div>`).join("");
+
+  document.getElementById("ue-plat-compare").innerHTML=PLATFORMS.map(p=>{
+    const rev=e.bookedNights*state.nightlyRate;
+    const net=rev*(1-p.fee/100)-e.cleaningTotal-e.fixedCosts;
+    const active=state.platforms.includes(p.id);
+    return `<div class="plat-card" style="border-color:${active?p.color+"60":"var(--border)"};background:${active?p.color+"08":"#fafafa"}">
+      <div class="plat-card-icon">${p.icon}</div>
+      <div class="plat-card-name" style="color:${p.color}">${p.label}</div>
+      <div class="plat-card-fee">${p.fee}% fee</div>
+      <div class="plat-card-net" style="color:${net>=0?"var(--green)":"var(--red)"}">${fmt(net)}</div>
+      <div class="plat-card-mo">/ month</div></div>`;
+  }).join("");
+  save();
+}
+
+// ══════════════════════════════════════════════
+// PORTFOLIO PAGE
+// ══════════════════════════════════════════════
+function buildPFPage() {
+  const pf=state.pf;
+  const mkF=(id,opts)=>makeNumberField(document.getElementById(id),opts,renderPF);
+
+  makeNumberField(document.getElementById("pf-units-field"),{
+    label:"Number of Units",getValue:()=>pf.units,setValue:v=>{ pfSetUnits(v); buildPFRentFields(); },
+    min:1,max:50,suffix:" apts",highlight:true},renderPF);
+
+  buildPlatforms("pf-platform-grid",()=>pf.platforms,v=>pf.platforms=v,renderPF);
+
+  mkF("pf-rate-field",    {label:"Nightly Rate",       getValue:()=>pf.nightlyRate,  setValue:v=>pf.nightlyRate=v,   min:10,max:2000,step:5,prefix:"$",highlight:true});
+  mkF("pf-occ-field",     {label:"Occupancy Rate",      getValue:()=>pf.occupancy,    setValue:v=>pf.occupancy=v,     min:1,max:100,suffix:"%"});
+  mkF("pf-stay-field",    {label:"Avg Stay (nights)",   getValue:()=>pf.stayLength,   setValue:v=>pf.stayLength=v,    min:1,max:30,suffix:" nights"});
+  mkF("pf-utilities-field",{label:"Utilities / apt",   getValue:()=>pf.utilities,    setValue:v=>pf.utilities=v,     min:0,max:1000,step:10,prefix:"$"});
+  mkF("pf-maintenance-field",{label:"Maintenance / apt",getValue:()=>pf.maintenance, setValue:v=>pf.maintenance=v,   min:0,max:1000,step:10,prefix:"$"});
+  mkF("pf-supplies-field",{label:"Supplies / apt",      getValue:()=>pf.supplies,     setValue:v=>pf.supplies=v,      min:0,max:1000,step:10,prefix:"$"});
+  mkF("pf-cleaning-field",{label:"Cleaning Fee / Stay", getValue:()=>pf.cleaningFee,  setValue:v=>pf.cleaningFee=v,   min:0,max:500,step:5,prefix:"$"});
+
+  buildPFRentFields();
+  pfBuildEmployees();
+  renderPF();
+}
+
+function pfSetUnits(n) {
+  state.pf.units=n;
+  const arr=state.pf.apartmentRents;
+  if(n>arr.length){ const last=arr[arr.length-1]||1400; while(arr.length<n) arr.push(last); }
+  else state.pf.apartmentRents=arr.slice(0,n);
+  // sync apartments list
+  while(state.apartments.length<n) state.apartments.push({name:`Apt ${state.apartments.length+1}`,todos:JSON.parse(JSON.stringify(DEFAULT_TODOS))});
+}
+
+function buildPFRentFields() {
+  const container=document.getElementById("pf-rent-fields");
+  container.innerHTML="";
+  for(let i=0;i<state.pf.units;i++){
+    const idx=i; const wrap=document.createElement("div"); container.appendChild(wrap);
+    makeNumberField(wrap,{
+      label:`Apt #${idx+1} — Rent`,
+      getValue:()=>state.pf.apartmentRents[idx]??1400,
+      setValue:v=>{const a=[...state.pf.apartmentRents];a[idx]=v;state.pf.apartmentRents=a;},
+      min:0,max:20000,step:50,prefix:"$",highlight:idx===0
+    },renderPF);
+  }
+}
+
+function pfBuildEmployees() {
+  const list=document.getElementById("pf-employees-list");
+  list.innerHTML="";
+  state.pf.employees.forEach((emp,idx)=>{
+    const card=document.createElement("div"); card.className="emp-card";
+    card.innerHTML=`
+      <div class="emp-header">
+        <input class="emp-name-input" value="${emp.name}" placeholder="Role / Name" data-idx="${idx}" />
+        ${state.pf.employees.length>1?`<button class="emp-remove" data-idx="${idx}">✕</button>`:""}
+      </div>
+      <div class="num-field-row">
+        <button class="stepper-btn" data-action="dec" data-idx="${idx}">−</button>
+        <div class="num-field-center">
+          <span class="num-prefix">$</span>
+          <input class="num-input" type="number" min="0" max="50000" step="100" value="${emp.salary}" data-salary="${idx}" />
+          <span style="font-size:13px;font-weight:600;color:var(--label)">/mo</span>
+        </div>
+        <button class="stepper-btn" data-action="inc" data-idx="${idx}">+</button>
+      </div>`;
+    list.appendChild(card);
+  });
+  list.querySelectorAll(".emp-name-input").forEach(el=>el.addEventListener("input",()=>{ state.pf.employees[+el.dataset.idx].name=el.value; renderPF(); }));
+  list.querySelectorAll("[data-salary]").forEach(el=>{
+    el.addEventListener("input",()=>{ const v=Number(el.value); if(!isNaN(v)){ state.pf.employees[+el.dataset.salary].salary=Math.max(0,v); renderPF(); }});
+    el.addEventListener("blur",()=>{ const v=Number(el.value); el.value=isNaN(v)?state.pf.employees[+el.dataset.salary].salary:Math.max(0,v); });
+  });
+  list.querySelectorAll(".emp-remove").forEach(el=>el.addEventListener("click",()=>{ state.pf.employees=state.pf.employees.filter((_,i)=>i!==+el.dataset.idx); pfBuildEmployees(); renderPF(); }));
+  list.querySelectorAll(".stepper-btn[data-action]").forEach(el=>el.addEventListener("click",()=>{
+    const i=+el.dataset.idx, d=el.dataset.action==="inc"?1:-1;
+    state.pf.employees[i].salary=Math.max(0,state.pf.employees[i].salary+d*100);
+    pfBuildEmployees(); renderPF();
+  }));
+}
+
+function pfAddEmployee() {
+  state.pf.employees=[...state.pf.employees,{name:`Employee ${state.pf.employees.length+1}`,salary:1500}];
+  pfBuildEmployees(); renderPF();
+}
+
+function renderPF() {
+  const e=calcPortfolio();
+  const pf=state.pf;
+  const blended=pf.platforms.length===0?0:PLATFORMS.filter(p=>pf.platforms.includes(p.id)).reduce((s,p)=>s+p.fee,0)/pf.platforms.length;
+  const totalRent=pf.apartmentRents.reduce((s,r)=>s+r,0);
+  const totalSal =pf.employees.reduce((s,emp)=>s+emp.salary,0);
+  const pc=e.netProfit>=0?"var(--green)":"var(--red)";
+  const mc=e.margin>20?"var(--green)":e.margin>0?"var(--orange)":"var(--red)";
+
+  document.getElementById("pf-blended-row").style.display=pf.platforms.length>0?"":" none";
+  document.getElementById("pf-blended-value").textContent=pct(blended);
+  document.getElementById("pf-total-rent-row").style.display=pf.units>1?"":" none";
+  document.getElementById("pf-total-rent-value").textContent=fmt(totalRent);
+  document.getElementById("pf-salary-total-value").textContent=fmt(totalSal);
+
+  document.getElementById("pf-hero-card").innerHTML=`
+    <div class="hero-card ${e.netProfit>=0?"profit":"loss"}">
+      <div class="hero-tag" style="color:${e.netProfit>=0?"var(--green)":"#ff6b6b"}">Portfolio Monthly Net</div>
+      <div class="hero-amount">${fmt(e.netProfit)}</div>
+      <div class="hero-period">per month · ${fmt(e.netProfit*12)} per year · ${pf.units} apartments</div>
+      <div class="hero-grid">
+        <div class="hero-cell"><div class="hero-cell-label">Revenue</div><div class="hero-cell-value" style="color:rgba(255,255,255,0.9)">${fmt(e.grossRevenue)}</div></div>
+        <div class="hero-cell"><div class="hero-cell-label">All Costs</div><div class="hero-cell-value" style="color:#ff6b6b">${fmt(e.totalCosts)}</div></div>
+        <div class="hero-cell"><div class="hero-cell-label">Margin</div><div class="hero-cell-value" style="color:${mc}">${pct(e.margin)}</div></div>
+      </div>
+    </div>`;
+
+  document.getElementById("pf-pl-rows").innerHTML=`
+    ${plRow("Gross Revenue",fmt(e.grossRevenue),"var(--green)")}
+    ${plRow(`Platform Fees (${pct(blended)} avg)`,"- "+fmt(e.platformFees),"var(--red)")}
+    ${plRow(`Cleaning (${e.stays} stays × ${fmt(pf.cleaningFee)})`,"- "+fmt(e.cleaningTotal),"var(--orange)")}
+    ${plRow("Total Rent","- "+fmt(e.rentCost),"var(--blue)",`${pf.units} apts — avg ${fmt(Math.round(e.rentCost/pf.units))}/apt`)}
+    ${e.salaryCost>0?plRow(`Salaries (${pf.employees.length} staff)`,"- "+fmt(e.salaryCost),"var(--purple)"):""}
+    ${plRow("Utilities + Ops","- "+fmt((pf.utilities+pf.maintenance+pf.supplies)*pf.units),"var(--blue)")}`;
+  document.getElementById("pf-net-profit-display").textContent=fmt(e.netProfit);
+  document.getElementById("pf-net-profit-display").style.color=pc;
+
+  document.getElementById("pf-bar-segments").innerHTML=[
+    ["Net Profit",Math.max(0,e.netProfit),e.grossRevenue,"var(--green)"],
+    ["Platform Fees",e.platformFees,e.grossRevenue,"#FF385C"],
+    ["Cleaning",e.cleaningTotal,e.grossRevenue,"var(--orange)"],
+    ["Fixed Costs",e.fixedCosts,e.grossRevenue,"var(--blue)"],
+  ].map(([l,v,t,c])=>barSeg(l,v,t,c)).join("");
+
+  const sigs=[
+    {label:"Booked Nights/mo",value:e.bookedNights.toFixed(0)+" nights",icon:"🌙",warn:false},
+    {label:"Guest Stays/mo",value:e.stays+" stays",icon:"👤",warn:false},
+    {label:"Breakeven Occ.",value:e.beOcc.toFixed(0)+"%",icon:"⚖️",warn:e.beOcc>=pf.occupancy},
+    {label:"Per-Unit Net",value:fmt(e.netProfit/Math.max(1,pf.units)),icon:"🏢",warn:false},
+    {label:"Annual Net",value:fmt(e.netProfit*12),icon:"📅",warn:false},
+    {label:"Units",value:pf.units+" apts",icon:"🗂️",warn:false},
+  ];
+  document.getElementById("pf-key-signals").innerHTML=sigs.map(s=>`<div class="metric-card${s.warn?" warn":""}"><div class="metric-icon">${s.icon}</div><div class="metric-label">${s.label}</div><div class="metric-value">${s.value}</div></div>`).join("");
+  save();
+}
+
+// ══════════════════════════════════════════════
+// SHARED RENDER HELPERS
+// ══════════════════════════════════════════════
+function plRow(label,value,color,sub=""){
+  return `<div class="result-row"><div><div class="result-row-label">${label}</div>${sub?`<div class="result-row-sub">${sub}</div>`:""}</div><div class="result-row-value" style="color:${color}">${value}</div></div>`;
+}
+function barSeg(label,value,total,color){
+  const w=total>0?Math.min(100,(value/total)*100):0;
+  return `<div class="bar-segment"><div class="bar-row"><span class="bar-lbl">${label}</span><span class="bar-val">${fmt(value)}</span></div><div class="bar-track"><div class="bar-fill" style="width:${w}%;background:${color}"></div></div></div>`;
+}
+// Groups bookkeeping transactions by currency (USD, UZS, …) and totals income
+// / expense within each currency separately. Different currencies are NEVER
+// added together — that's what caused confusing, inflated totals before.
+function sumByCurrency(txs) {
+  const groups = {};
+  txs.forEach(t=>{
+    const cur = t.currency || "USD";
+    if(!groups[cur]) groups[cur] = { income:0, expense:0, incomeCount:0, expenseCount:0 };
+    if(t.type==="income"){ groups[cur].income += t.amount; groups[cur].incomeCount++; }
+    else { groups[cur].expense += t.amount; groups[cur].expenseCount++; }
+  });
+  // USD first, then alphabetical for the rest
+  return Object.keys(groups).sort((a,b)=> a==="USD"?-1 : b==="USD"?1 : a.localeCompare(b))
+    .map(cur=>({ currency:cur, ...groups[cur] }));
+}
+
+// ══════════════════════════════════════════════
+// OVERVIEW
+// ══════════════════════════════════════════════
+function renderOverview() {
+  const ue=calcUnit();
+  const pf=calcPortfolio();
+
+  // Stats — bookkeeping totals are scoped to the current month only,
+  // and income / expense are kept as two separate figures (never summed
+  // into one "combined" number) so the two currencies of information
+  // don't get confused with each other.
+  const now_ = new Date();
+  const thisMonthTx = state.transactions.filter(t=>{
+    const td = new Date(t.date);
+    return td.getFullYear()===now_.getFullYear() && td.getMonth()===now_.getMonth();
+  });
+  const urgentCount  = state.apartments.flatMap(a=>Object.values(a.todos).flat()).filter(t=>!t.done&&t.priority==="high").length;
+  const bkByCurrency = sumByCurrency(thisMonthTx);
+
+  document.getElementById("ov-stats").innerHTML=`
+    <div class="ov-stat"><div class="ov-stat-icon">💰</div><div class="ov-stat-label">Portfolio Revenue / mo</div><div class="ov-stat-val" style="color:var(--green)">${fmt(pf.grossRevenue)}</div><div class="ov-stat-sub">${state.pf.units} apartments</div></div>
+    <div class="ov-stat"><div class="ov-stat-icon">📈</div><div class="ov-stat-label">Monthly Net Profit</div><div class="ov-stat-val" style="color:${pf.netProfit>=0?"var(--green)":"var(--red)"}">${fmt(pf.netProfit)}</div><div class="ov-stat-sub">${pct(pf.margin)} margin</div></div>
+    <div class="ov-stat"><div class="ov-stat-icon">🚨</div><div class="ov-stat-label">Urgent Tasks</div><div class="ov-stat-val" style="color:${urgentCount>0?"var(--red)":"var(--green)"}">${urgentCount}</div><div class="ov-stat-sub">across all apartments</div></div>
+    ${bkByCurrency.map(g=>`
+    <div class="ov-stat"><div class="ov-stat-icon">📥</div><div class="ov-stat-label">This Month Income (${g.currency})</div><div class="ov-stat-val" style="color:var(--green)">${fmtCur(g.income,g.currency)}</div><div class="ov-stat-sub">${g.incomeCount} transactions</div></div>
+    <div class="ov-stat"><div class="ov-stat-icon">📤</div><div class="ov-stat-label">This Month Expense (${g.currency})</div><div class="ov-stat-val" style="color:var(--red)">${fmtCur(g.expense,g.currency)}</div><div class="ov-stat-sub">${g.expenseCount} transactions</div></div>`).join("")}
+  `;
+
+  // Urgent tasks
+  const urgentTasks=state.apartments.flatMap((a,ai)=>
+    Object.entries(a.todos).flatMap(([cat,tasks])=>
+      tasks.filter(t=>!t.done&&t.priority==="high").map(t=>({...t,apt:a.name,cat}))
+    )
+  ).slice(0,5);
+  document.getElementById("ov-urgent").innerHTML = urgentTasks.length===0
+    ? `<div style="font-size:13px;color:var(--label);padding:10px 0;">✓ No urgent tasks right now</div>`
+    : urgentTasks.map(t=>`
+        <div class="urgent-item">
+          <div class="urgent-dot" style="background:var(--red)"></div>
+          <div><div class="urgent-text">${t.text}</div><div class="urgent-sub">${t.apt} · ${TODO_CATEGORIES.find(c=>c.id===t.cat)?.label||t.cat}</div></div>
+          <div class="urgent-time">URGENT</div>
+        </div>`).join("");
+
+  // P&L snapshot
+  document.getElementById("ov-pl").innerHTML=`
+    ${plRow("Gross Revenue",fmt(pf.grossRevenue),"var(--green)")}
+    ${plRow("Total Costs","- "+fmt(pf.totalCosts),"var(--red)")}
+    <div class="result-net"><span class="result-net-label">Net Profit</span><span class="result-net-value" style="color:${pf.netProfit>=0?"var(--green)":"var(--red)"}">${fmt(pf.netProfit)}</span></div>`;
+
+  // Upcoming costs — pull from recurring payments
+  const now=new Date();
+  const day=now.getDate();
+  const payments=state.payments||[];
+  const nowMidnight=new Date(now); nowMidnight.setHours(0,0,0,0);
+  const upcomingPayments=payments.map(p=>{
+    let dueDate=new Date(now.getFullYear(),now.getMonth(),p.dueDay);
+    if(dueDate<=nowMidnight) dueDate=new Date(now.getFullYear(),now.getMonth()+1,p.dueDay);
+    const diff=Math.floor((dueDate-nowMidnight)/(1000*60*60*24));
+    const ord=p.dueDay===1?"st":p.dueDay===2?"nd":p.dueDay===3?"rd":"th";
+    return {name:p.name,date:`Due ${p.dueDay}${ord}`,diff,amount:p.amount};
+  }).sort((a,b)=>a.diff-b.diff).slice(0,6);
+  document.getElementById("ov-upcoming").innerHTML=upcomingPayments.length===0
+    ? `<div style="font-size:13px;color:var(--label);padding:8px 0">No recurring payments set up yet — <button onclick="navTo('payments')" style="background:none;border:none;color:var(--blue);cursor:pointer;font-size:13px;font-weight:600;padding:0">add them →</button></div>`
+    : upcomingPayments.map(u=>`
+    <div class="upcoming-item">
+      <div class="upcoming-left"><div class="upcoming-name">${u.name}</div><div class="upcoming-date">${u.date}${u.diff<=3?' · <span style="color:var(--orange)">Soon</span>':''}</div></div>
+      <div class="upcoming-amt">${fmt(u.amount)}</div>
+    </div>`).join("");
+
+  // Recent transactions
+  const recent=[...state.transactions].sort((a,b)=>new Date(b.date)-new Date(a.date)).slice(0,5);
+  document.getElementById("ov-recent-tx").innerHTML=recent.map(t=>`
+    <div class="upcoming-item">
+      <div class="upcoming-left"><div class="upcoming-name">${t.desc}</div><div class="upcoming-date">${t.date} · ${t.cat}</div></div>
+      <div class="${t.type==="income"?"bk-amt-pos":"bk-amt-neg"}">${t.type==="income"?"+":"-"}${fmtCur(t.amount,t.currency)}</div>
+    </div>`).join("");
+
+  updateTodoBadge();
+}
+
+// ══════════════════════════════════════════════
+// TODO PAGE
+// ══════════════════════════════════════════════
+function updateTodoBadge() {
+  const n=state.apartments.flatMap(a=>Object.values(a.todos).flat()).filter(t=>!t.done).length;
+  document.getElementById("todo-badge").textContent=n;
+}
+
+function renderTodo() {
+  // Apt tabs
+  const tabsEl=document.getElementById("apt-tabs");
+  tabsEl.innerHTML=state.apartments.map((a,i)=>`
+    <button class="apt-tab-btn ${i===state.activeApt?"active":""}" onclick="setActiveApt(${i})" oncontextmenu="openAptContextMenu(event,${i})">${a.name}</button>`).join("");
+
+  const apt=state.apartments[state.activeApt];
+  if(!apt){ document.getElementById("todo-content").innerHTML=""; return; }
+
+  const today=new Date(); today.setHours(0,0,0,0);
+
+  function getAutoUrgency(t) {
+    // If manually overridden or no date, use stored priority
+    if(!t.dueDate) return t.priority||"medium";
+    const due=new Date(t.dueDate); due.setHours(0,0,0,0);
+    const diff=Math.floor((due-today)/(1000*60*60*24));
+    if(diff<0)  return "high";    // overdue
+    if(diff<=2) return "high";    // due in 0–2 days
+    if(diff<=7) return "medium";  // due in 3–7 days
+    return "low";
+  }
+
+  function urgencyLabel(t) {
+    if(!t.dueDate) return t.priority||"medium";
+    const due=new Date(t.dueDate); due.setHours(0,0,0,0);
+    const diff=Math.floor((due-today)/(1000*60*60*24));
+    if(diff<0)  return "overdue";
+    if(diff===0) return "today";
+    if(diff===1) return "tomorrow";
+    if(diff<=7) return `${diff}d left`;
+    return "low";
+  }
+
+  document.getElementById("todo-content").innerHTML=`
+    <div class="todo-grid">
+      ${TODO_CATEGORIES.map(cat=>{
+        const tasks=apt.todos[cat.id]||[];
+        const done=tasks.filter(t=>t.done).length;
+        const pct=tasks.length>0?Math.round((done/tasks.length)*100):0;
+        return `
+          <div class="todo-card" style="border-top-color:${cat.color}">
+            <div class="todo-card-header">
+              <div class="todo-cat-icon">${cat.icon}</div>
+              <div style="flex:1;min-width:0">
+                <div class="todo-cat-name" style="color:${cat.color}">${cat.label}</div>
+                <div class="todo-cat-count">${done}/${tasks.length} done</div>
+              </div>
+              <div style="font-size:11px;font-weight:700;color:${pct===100?"var(--green)":"var(--label)"}">${pct}%</div>
+            </div>
+            <div class="todo-progress-bar" style="margin-top:0">
+              <div class="todo-progress-fill" style="width:${pct}%;background:${cat.color}"></div>
+            </div>
+            <div class="todo-card-body">
+              ${tasks.length===0?`<div class="todo-no-tasks">No tasks yet</div>`:""}
+              ${tasks.map((t,ti)=>{
+                const urg=getAutoUrgency(t);
+                const lbl=urgencyLabel(t);
+                const isOverdue=t.dueDate&&new Date(t.dueDate)<today&&!t.done;
+                const dueFmt=t.dueDate?new Date(t.dueDate).toLocaleDateString("en-GB",{day:"numeric",month:"short"}):"";
+                return `
+                <div class="todo-item" style="${isOverdue?"background:rgba(255,59,48,0.04);border-radius:10px":""}">
+                  <div class="todo-check ${t.done?"done":""}" onclick="toggleTodo('${cat.id}',${ti})"></div>
+                  <div style="flex:1;min-width:0">
+                    <div class="todo-item-text ${t.done?"done":""}">${t.text}</div>
+                    <div style="display:flex;align-items:center;gap:8px;margin-top:3px;flex-wrap:wrap">
+                      ${t.owner?`<span style="font-size:10px;font-weight:600;color:${t.owner==="Bobur"?"var(--blue)":"var(--purple)"};background:${t.owner==="Bobur"?"rgba(0,122,255,0.08)":"rgba(88,86,214,0.08)"};padding:1px 7px;border-radius:8px">👤 ${t.owner}</span>`:""}
+                      ${dueFmt?`<span style="font-size:10px;font-weight:600;color:${isOverdue?"var(--red)":"var(--label)"}">${isOverdue?"⚠️ ":"📅 "}${dueFmt}</span>`:""}
+                    </div>
+                  </div>
+                  <div class="todo-item-priority prio-${urg}" onclick="cyclePriority('${cat.id}',${ti})" title="Click to cycle priority">${lbl}</div>
+                  <button class="todo-item-del" onclick="removeTodo('${cat.id}',${ti})" title="Remove">✕</button>
+                </div>`;
+              }).join("")}
+            </div>
+            <div class="add-todo-row" style="flex-wrap:wrap;gap:6px">
+              <input class="add-todo-input" placeholder="Add task…" id="add-input-${cat.id}" style="min-width:100px;flex:1" onkeydown="if(event.key==='Enter')openAddTodoModal('${cat.id}')" />
+              <select class="bk-filter-select" id="add-owner-${cat.id}" style="font-size:11px;padding:5px 8px;border-radius:9px;flex-shrink:0">
+                <option value="">Owner</option>
+                <option value="Bobur">Bobur</option>
+                <option value="Murod">Murod</option>
+              </select>
+              <input type="date" class="bk-form-input" id="add-date-${cat.id}" style="font-size:11px;padding:5px 8px;border-radius:9px;width:120px;flex-shrink:0" title="Due date" />
+              <button class="add-todo-btn" onclick="addTodo('${cat.id}')">Add</button>
+            </div>
+          </div>`;
+      }).join("")}
+    </div>`;
+  updateTodoBadge();
+}
+
+
+function setActiveApt(i) {
+  state.activeApt=i;
+  renderTodo();
+}
+
+// ── Apartment right-click context menu ──
+let _ctxAptIdx = null;
+function openAptContextMenu(e, idx) {
+  e.preventDefault();
+  _ctxAptIdx = idx;
+  const menu = document.getElementById("apt-ctx-menu");
+  menu.style.left = e.pageX + "px";
+  menu.style.top  = e.pageY + "px";
+  menu.classList.add("open");
+  // Hide "Remove" if it's the last apartment
+  document.getElementById("apt-ctx-remove").style.display = state.apartments.length > 1 ? "" : "none";
+  // Close on outside click — but stop clicks inside the menu from triggering this
+  const outsideClose = () => menu.classList.remove("open");
+  menu.onclick = e2 => e2.stopPropagation();
+  setTimeout(()=>document.addEventListener("click", outsideClose, {once:true}), 0);
+}
+function closeAptCtxOnce() {
+  document.getElementById("apt-ctx-menu").classList.remove("open");
+}
+function aptCtxRename() {
+  document.getElementById("apt-ctx-menu").classList.remove("open");
+  const apt = state.apartments[_ctxAptIdx];
+  if (!apt) return;
+  document.getElementById("rename-apt-input").value = apt.name;
+  document.getElementById("rename-apt-modal").classList.add("open");
+}
+function aptCtxRemove() {
+  document.getElementById("apt-ctx-menu").classList.remove("open");
+  const apt = state.apartments[_ctxAptIdx];
+  if (!apt) return;
+  if (!confirm(`Remove "${apt.name}" and all its tasks?`)) return;
+  state.apartments.splice(_ctxAptIdx, 1);
+  if (state.activeApt >= state.apartments.length) state.activeApt = state.apartments.length - 1;
+  // sync pf units
+  if (state.pf.units > state.apartments.length) { state.pf.units = state.apartments.length; state.pf.apartmentRents = state.pf.apartmentRents.slice(0, state.apartments.length); }
+  renderTodo(); save();
+}
+function saveAptRename() {
+  const val = document.getElementById("rename-apt-input").value.trim();
+  if (!val) return;
+  const oldName = state.apartments[_ctxAptIdx].name;
+  state.apartments[_ctxAptIdx].name = val;
+  // update transactions & bookings that referenced old name
+  state.transactions.forEach(t=>{ if(t.apt===oldName) t.apt=val; });
+  state.bookings.forEach(b=>{ if(b.apt===oldName) b.apt=val; });
+  closeAptRenameModal();
+  renderTodo(); save();
+}
+function closeAptRenameModal() {
+  document.getElementById("rename-apt-modal").classList.remove("open");
+}
+
+function addApartment() {
+  const n=state.apartments.length+1;
+  state.apartments.push({name:`Apt ${n}`,todos:JSON.parse(JSON.stringify(DEFAULT_TODOS))});
+  state.activeApt=state.apartments.length-1;
+  // sync pf units
+  if(state.pf.units<state.apartments.length){ pfSetUnits(state.apartments.length); }
+  renderTodo(); save();
+}
+
+function toggleTodo(catId, idx) {
+  const apt=state.apartments[state.activeApt];
+  apt.todos[catId][idx].done=!apt.todos[catId][idx].done;
+  renderTodo(); save();
+}
+
+function removeTodo(catId, idx) {
+  const apt=state.apartments[state.activeApt];
+  apt.todos[catId].splice(idx,1);
+  renderTodo(); save();
+}
+
+function addTodo(catId) {
+  const input=document.getElementById("add-input-"+catId);
+  const ownerSel=document.getElementById("add-owner-"+catId);
+  const dateSel=document.getElementById("add-date-"+catId);
+  const text=input.value.trim();
+  if(!text) return;
+  const apt=state.apartments[state.activeApt];
+  if(!apt.todos[catId]) apt.todos[catId]=[];
+  apt.todos[catId].push({
+    text,
+    priority:"medium",
+    done:false,
+    owner: ownerSel ? ownerSel.value : "",
+    dueDate: dateSel ? dateSel.value : "",
+  });
+  renderTodo(); save();
+}
+
+function cyclePriority(catId, idx) {
+  const apt=state.apartments[state.activeApt];
+  const t=apt.todos[catId][idx];
+  if(!t.dueDate) {
+    // Only allow manual cycle if no due date
+    const cycle={"high":"medium","medium":"low","low":"high"};
+    t.priority=cycle[t.priority]||"medium";
+    renderTodo(); save();
+  }
+}
+
+// ══════════════════════════════════════════════
+// CALENDAR
+// ══════════════════════════════════════════════
+const PLAT_COLORS={airbnb:"#FF385C",booking:"#003580",vrbo:"#1A56DB",direct:"#34C759"};
+
+function renderCalendar() {
+  const {calYear:y,calMonth:m}=state;
+  document.getElementById("cal-month-label").textContent=`${MONTHS[m]} ${y}`;
+
+  // Platform status chips
+  document.getElementById("cal-platform-status").innerHTML=PLATFORMS.map(p=>{
+    const connected=state.connectedOTAs.includes(p.id);
+    return `<div class="cal-plat-chip ${connected?"connected":"connecting"}" onclick="connectOTA('${p.id}')">
+      ${p.icon} ${p.label} ${connected?"✓ Connected":"+ Connect"}
+    </div>`;
+  }).join("");
+
+  // Build calendar grid
+  const firstDay=new Date(y,m,1);
+  const startOffset=((firstDay.getDay()+6)%7);
+  const calStart=new Date(y,m,1-startOffset);
+
+  const today=new Date(); today.setHours(0,0,0,0);
+  let html="";
+  for(let i=0;i<42;i++){
+    const d=new Date(calStart); d.setDate(calStart.getDate()+i);
+    const isOther=d.getMonth()!==m;
+    const isToday=d.toDateString()===today.toDateString();
+    const dayBookings=state.bookings.filter(b=>{
+      const ds=new Date(b.start); ds.setHours(0,0,0,0);
+      const de=new Date(b.end);   de.setHours(0,0,0,0);
+      return d>=ds && d<de;
+    });
+    const hasBookings=dayBookings.length>0;
+    const bookingIds=dayBookings.map(b=>b.id).join(",");
+    const dateStr=d.toLocaleDateString("en-GB",{day:"numeric",month:"short"});
+    const bookingHtml=dayBookings.map(b=>`
+      <div class="cal-booking" style="background:${PLAT_COLORS[b.platform]||"#888"}22;color:${PLAT_COLORS[b.platform]||"#888"};border-left:2px solid ${PLAT_COLORS[b.platform]||"#888"}"
+           title="${b.guest} · ${b.apt} · ${fmt(b.amount)}">${b.guest.split(" ")[0]}</div>`).join("");
+    html+=`<div class="cal-day ${isOther?"other-month":""} ${isToday?"today":""} ${hasBookings?"day-clickable":""}"
+               ${hasBookings?`onclick="openDayBookings([${bookingIds}],'${dateStr}')"`:""}>
+      <div class="cal-day-num">${d.getDate()}</div>
+      ${bookingHtml}
+    </div>`;
+  }
+  document.getElementById("cal-days").innerHTML=html;
+}
+
+// ══════════════════════════════════════════════
+// BOOKING DETAIL MODAL
+// ══════════════════════════════════════════════
+const PLAT_LABELS={airbnb:"Airbnb",booking:"Booking.com",vrbo:"VRBO",direct:"Direct"};
+const PLAT_ICONS ={airbnb:"🏠",booking:"🌐",vrbo:"🏡",direct:"✉️"};
+
+function openDayBookings(ids, dateLabel) {
+  if(ids.length===1){ showBookingDetail(ids[0]); return; }
+  // Multiple bookings on this day — show list first
+  document.getElementById("day-booking-list-title").textContent=`Bookings · ${dateLabel}`;
+  const bookings=ids.map(id=>state.bookings.find(b=>b.id===id)).filter(Boolean);
+  document.getElementById("day-booking-list-body").innerHTML=bookings.map(b=>{
+    const nights=Math.round((new Date(b.end)-new Date(b.start))/(1000*60*60*24));
+    return `<div class="day-booking-card" onclick="closeDayList();showBookingDetail(${b.id})">
+      <div class="day-booking-plat-dot" style="background:${PLAT_COLORS[b.platform]||"#888"}"></div>
+      <div class="day-booking-card-info">
+        <div class="day-booking-card-guest">${b.guest}</div>
+        <div class="day-booking-card-sub">${b.apt} · ${PLAT_LABELS[b.platform]||b.platform} · ${nights} nights</div>
+      </div>
+      <div class="day-booking-card-amt">${fmt(b.amount)}</div>
+    </div>`;
+  }).join("");
+  document.getElementById("day-booking-list-overlay").classList.add("open");
+}
+
+function closeDayList() {
+  document.getElementById("day-booking-list-overlay").classList.remove("open");
+}
+
+function showBookingDetail(id) {
+  const b=state.bookings.find(b=>b.id===id);
+  if(!b) return;
+  const start=new Date(b.start); const end=new Date(b.end);
+  const nights=Math.round((end-start)/(1000*60*60*24));
+  const fmtDate=d=>d.toLocaleDateString("en-GB",{weekday:"short",day:"numeric",month:"short",year:"numeric"});
+  const color=PLAT_COLORS[b.platform]||"#888";
+
+  document.getElementById("bm-platform-badge").textContent=`${PLAT_ICONS[b.platform]||""} ${PLAT_LABELS[b.platform]||b.platform}`;
+  document.getElementById("bm-platform-badge").style.cssText=`background:${color}18;color:${color}`;
+  document.getElementById("bm-guest").textContent=b.guest;
+  document.getElementById("bm-apt").textContent=b.apt;
+  document.getElementById("bm-checkin").textContent=fmtDate(start);
+  document.getElementById("bm-checkout").textContent=fmtDate(end);
+  document.getElementById("bm-nights").textContent=`${nights} night${nights!==1?"s":""}`;
+  document.getElementById("bm-amount").textContent=fmt(b.amount);
+  document.getElementById("bm-per-night").textContent=fmt(Math.round(b.amount/Math.max(1,nights)))+"/night";
+  document.getElementById("bm-status").innerHTML=`<span style="color:var(--green);font-weight:700">✓ Confirmed</span>`;
+  document.getElementById("bm-delete-btn").onclick=()=>{
+    if(confirm(`Delete booking for ${b.guest}?`)){
+      state.bookings=state.bookings.filter(bk=>bk.id!==id);
+      closeBookingModal(); renderCalendar(); save();
+    }
+  };
+  document.getElementById("booking-modal-overlay").classList.add("open");
+}
+
+function closeBookingModal() {
+  document.getElementById("booking-modal-overlay").classList.remove("open");
+}
+
+// ══════════════════════════════════════════════
+// ADD BOOKING
+// ══════════════════════════════════════════════
+function openAddBooking() {
+  const today=new Date().toISOString().split("T")[0];
+  document.getElementById("ab-guest").value="";
+  document.getElementById("ab-start").value=today;
+  document.getElementById("ab-end").value="";
+  document.getElementById("ab-amount").value="";
+  document.getElementById("ab-platform").value="airbnb";
+  const aptSel=document.getElementById("ab-apt");
+  aptSel.innerHTML=state.apartments.map(a=>`<option>${a.name}</option>`).join("");
+  document.getElementById("add-booking-overlay").classList.add("open");
+}
+
+function closeAddBooking() {
+  document.getElementById("add-booking-overlay").classList.remove("open");
+}
+
+function saveNewBooking() {
+  const guest=document.getElementById("ab-guest").value.trim();
+  const start=document.getElementById("ab-start").value;
+  const end  =document.getElementById("ab-end").value;
+  const platform=document.getElementById("ab-platform").value;
+  const apt  =document.getElementById("ab-apt").value;
+  const amount=parseFloat(document.getElementById("ab-amount").value);
+  if(!guest||!start||!end||isNaN(amount)||amount<0){alert("Please fill all fields.");return;}
+  if(new Date(end)<=new Date(start)){alert("Check-out must be after check-in.");return;}
+  const id=Date.now();
+  state.bookings.push({id,guest,start:new Date(start),end:new Date(end),platform,apt,amount});
+  closeAddBooking(); renderCalendar(); save();
+}
+
+function calPrev(){ state.calMonth--; if(state.calMonth<0){state.calMonth=11;state.calYear--;} renderCalendar(); }
+function calNext(){ state.calMonth++; if(state.calMonth>11){state.calMonth=0;state.calYear++;} renderCalendar(); }
+
+function connectOTA(id) {
+  if(state.connectedOTAs.includes(id)){
+    // Already connected — show info
+    alert(`${PLATFORMS.find(p=>p.id===id)?.label} is connected. To disconnect, remove it from your OTA settings.\n\nIn a production app, this would open OAuth flow to sync real bookings.`);
+  } else {
+    if(confirm(`Connect ${PLATFORMS.find(p=>p.id===id)?.label}?\n\nIn a production version this would open an OAuth flow. For now we'll mark it as connected and show demo bookings.`)){
+      state.connectedOTAs.push(id);
+      renderCalendar(); save();
+    }
+  }
+}
+
+// ══════════════════════════════════════════════
+// BOOKKEEPING
+// ══════════════════════════════════════════════
+function renderBK() {
+  const typeFilter=document.getElementById("bk-filter-type")?.value||"all";
+  const aptFilter =document.getElementById("bk-filter-apt")?.value||"all";
+
+  // Sync apt filter dropdown
+  const aptSelect=document.getElementById("bk-filter-apt");
+  const curVal=aptSelect.value;
+  aptSelect.innerHTML=`<option value="all">All Apartments</option>`
+    +state.apartments.map(a=>`<option value="${a.name}" ${curVal===a.name?"selected":""}>${a.name}</option>`).join("")
+    +`<option value="All" ${curVal==="All"?"selected":""}>All (portfolio)</option>`;
+
+  let txs=[...state.transactions].sort((a,b)=>new Date(b.date)-new Date(a.date));
+  if(typeFilter!=="all") txs=txs.filter(t=>t.type===typeFilter);
+  if(aptFilter!=="all")  txs=txs.filter(t=>t.apt===aptFilter||t.apt==="All");
+
+  // Summary — grouped per currency so USD and UZS are always shown, and
+  // totalled, separately.
+  const allTx=state.transactions;
+  const bkByCurrency = sumByCurrency(allTx);
+  document.getElementById("bk-summary").innerHTML = bkByCurrency.map(g=>`
+    <div class="bk-stat"><div class="bk-stat-label">Total Income (${g.currency})</div><div class="bk-stat-val" style="color:var(--green)">${fmtCur(g.income,g.currency)}</div><div class="bk-stat-sub">${g.incomeCount} transactions</div></div>
+    <div class="bk-stat"><div class="bk-stat-label">Total Expenses (${g.currency})</div><div class="bk-stat-val" style="color:var(--red)">${fmtCur(g.expense,g.currency)}</div><div class="bk-stat-sub">${g.expenseCount} transactions</div></div>
+    <div class="bk-stat"><div class="bk-stat-label">Net (${g.currency})</div><div class="bk-stat-val" style="color:${(g.income-g.expense)>=0?"var(--green)":"var(--red)"}">${fmtCur(g.income-g.expense,g.currency)}</div><div class="bk-stat-sub">this period</div></div>`).join("");
+
+  document.getElementById("bk-tbody").innerHTML=txs.map(t=>`
+    <tr>
+      <td style="color:var(--label)">${t.date}</td>
+      <td style="font-weight:500">${t.desc}</td>
+      <td style="color:var(--label)">${t.cat}</td>
+      <td style="color:var(--label)">${t.apt}</td>
+      <td><span class="bk-type-badge ${t.type==="income"?"type-income":"type-expense"}">${t.type}</span></td>
+      <td style="text-align:right" class="${t.type==="income"?"bk-amt-pos":"bk-amt-neg"}">${t.type==="income"?"+":"-"}${fmtCur(t.amount,t.currency)}</td>
+      <td><span class="bk-added-by-badge ${t.addedBy==='Bobur'?'by-bobur':'by-murod'}">${t.addedBy||'—'}</span></td>
+      <td style="white-space:nowrap">
+        <button class="bk-action-btn bk-edit-btn" onclick="editTx(${t.id})">✏️ Edit</button>
+        <button class="bk-action-btn bk-del-btn"  onclick="deleteTx(${t.id})">✕ Remove</button>
+      </td>
+    </tr>`).join("");
+}
+
+let editingTxId = null;
+
+function openBKModal(tx=null) {
+  editingTxId = tx ? tx.id : null;
+  const today=new Date().toISOString().split("T")[0];
+  document.getElementById("bk-date").value   = tx ? tx.date   : today;
+  document.getElementById("bk-desc").value   = tx ? tx.desc   : "";
+  document.getElementById("bk-amount").value = tx ? tx.amount : "";
+  document.getElementById("bk-currency").value = tx ? (tx.currency||"USD") : "USD";
+  document.getElementById("bk-type").value   = tx ? tx.type   : "income";
+
+  const aptSel=document.getElementById("bk-apt-select");
+  aptSel.innerHTML=state.apartments.map(a=>`<option ${tx&&tx.apt===a.name?"selected":""}>${a.name}</option>`).join("")
+    +`<option value="All" ${tx&&tx.apt==="All"?"selected":""}>All apartments</option>`;
+
+  // Set category after options exist
+  setTimeout(()=>{ if(tx) document.getElementById("bk-cat").value=tx.cat; },0);
+
+  // Set addedBy
+  selectAddedBy(tx ? (tx.addedBy||"Bobur") : "Bobur");
+
+  document.querySelector("#bk-modal-overlay .bk-modal-title").textContent = tx ? "✏️ Edit Transaction" : "Add Transaction";
+  document.getElementById("bk-modal-overlay").classList.add("open");
+}
+
+function editTx(id) {
+  const tx=state.transactions.find(t=>t.id===id);
+  if(tx) openBKModal(tx);
+}
+
+function closeBKModal() { document.getElementById("bk-modal-overlay").classList.remove("open"); editingTxId=null; }
+
+function saveBKEntry() {
+  const date=document.getElementById("bk-date").value;
+  const desc=document.getElementById("bk-desc").value.trim();
+  const cat =document.getElementById("bk-cat").value;
+  const apt =document.getElementById("bk-apt-select").value;
+  const type=document.getElementById("bk-type").value;
+  const amt =parseFloat(document.getElementById("bk-amount").value);
+  const currency = document.getElementById("bk-currency").value || "USD";
+  const addedBy=document.querySelector("#bk-added-by-toggle .bk-by-btn.active")?.dataset.name||"Bobur";
+  if(!date||!desc||isNaN(amt)||amt<=0){ alert("Please fill all fields with a valid amount."); return; }
+  if(editingTxId !== null) {
+    // Edit mode — update existing
+    const tx=state.transactions.find(t=>t.id===editingTxId);
+    if(tx){ tx.date=date; tx.desc=desc; tx.cat=cat; tx.apt=apt; tx.type=type; tx.amount=amt; tx.currency=currency; tx.addedBy=addedBy; }
+  } else {
+    // Add mode — create new
+    state.transactions.push({id:Date.now(),date,desc,cat,apt,type,amount:amt,currency,addedBy});
+  }
+  closeBKModal(); renderBK(); save();
+}
+
+function deleteTx(id) {
+  state.transactions=state.transactions.filter(t=>t.id!==id);
+  renderBK(); save();
+}
+
+function selectAddedBy(name) {
+  document.querySelectorAll("#bk-added-by-toggle .bk-by-btn").forEach(btn=>{
+    btn.classList.toggle("active", btn.dataset.name===name);
+  });
+}
+
+// ══════════════════════════════════════════════
+// PAYMENTS
+// ══════════════════════════════════════════════
+function getDueBadge(dueDay) {
+  const today=new Date(); today.setHours(0,0,0,0);
+  const month=today.getMonth();
+  const year=today.getFullYear();
+  // Always jump to next month if due day has already passed — payment was already made
+  let dueDate=new Date(year,month,dueDay);
+  if(dueDate<=today) dueDate=new Date(year,month+1,dueDay);
+  const diff=Math.floor((dueDate-today)/(1000*60*60*24));
+  const ord=dueDay===1?"st":dueDay===2?"nd":dueDay===3?"rd":"th";
+  if(diff===0) return {label:"Due today",   cls:"pay-due-urgent"};
+  if(diff<=3)  return {label:`Due in ${diff}d`, cls:"pay-due-urgent"};
+  if(diff<=7)  return {label:`Due in ${diff}d`, cls:"pay-due-upcoming"};
+  return {label:`Due ${dueDay}${ord}`, cls:"pay-due-future"};
+}
+
+function renderPayments() {
+  if(!state.payments) state.payments=[];
+  const payments=state.payments;
+  const total=payments.reduce((s,p)=>s+p.amount,0);
+  const overdue=payments.filter(p=>getDueBadge(p.dueDay).cls==="pay-due-overdue").length;
+  const dueSoon=payments.filter(p=>getDueBadge(p.dueDay).cls==="pay-due-urgent").length;
+
+  document.getElementById("pay-stats").innerHTML=`
+    <div class="pay-stat"><div class="pay-stat-icon">💸</div><div class="pay-stat-label">Total Monthly</div><div class="pay-stat-val" style="color:var(--red)">${fmt(total)}</div><div class="pay-stat-sub">${payments.length} recurring payments</div></div>
+    <div class="pay-stat"><div class="pay-stat-icon">🚨</div><div class="pay-stat-label">Overdue</div><div class="pay-stat-val" style="color:${overdue>0?"var(--red)":"var(--green)"}">${overdue}</div><div class="pay-stat-sub">need attention now</div></div>
+    <div class="pay-stat"><div class="pay-stat-icon">⏰</div><div class="pay-stat-label">Due Soon (3 days)</div><div class="pay-stat-val" style="color:${dueSoon>0?"var(--orange)":"var(--green)"}">${dueSoon}</div><div class="pay-stat-sub">coming up shortly</div></div>`;
+
+  // Update sidebar badge
+  const urgentCount=overdue+dueSoon;
+  const badge=document.getElementById("pay-badge");
+  if(urgentCount>0){ badge.textContent=urgentCount; badge.style.display=""; }
+  else { badge.style.display="none"; }
+
+  if(payments.length===0){
+    document.getElementById("pay-list-container").innerHTML=`
+      <div class="pay-empty"><div class="pay-empty-icon">💳</div>No recurring payments yet.<br>Click <b>+ Add Payment</b> to get started.</div>`;
+    return;
+  }
+
+  // Sort by dueDay
+  const sorted=[...payments].sort((a,b)=>a.dueDay-b.dueDay);
+  document.getElementById("pay-list-container").innerHTML=`
+    <div class="pay-list">
+      ${sorted.map(p=>{
+        const badge=getDueBadge(p.dueDay);
+        const catIcon=p.cat.split(" ")[0];
+        const catColor=
+          p.cat.includes("Rent")?"rgba(0,122,255,0.12)":
+          p.cat.includes("WiFi")?"rgba(88,86,214,0.12)":
+          p.cat.includes("Electric")?"rgba(255,159,10,0.12)":
+          p.cat.includes("Water")?"rgba(100,200,255,0.15)":
+          p.cat.includes("Gas")?"rgba(255,59,48,0.12)":
+          "rgba(142,142,147,0.1)";
+        return `
+        <div class="pay-item">
+          <div class="pay-item-icon" style="background:${catColor}">${catIcon}</div>
+          <div>
+            <div class="pay-item-name">${p.name}</div>
+            <div class="pay-item-sub">${p.cat.substring(p.cat.indexOf(" ")+1)}${p.notes?` · ${p.notes}`:""}</div>
+            <div class="pay-item-apt">${p.apt} · 👤 ${p.paidBy||"—"}</div>
+          </div>
+          <div class="pay-due-badge ${badge.cls}">${badge.label}</div>
+          <div class="pay-item-amount">${fmt(p.amount)}/mo</div>
+          <div class="pay-item-actions">
+            <button class="pay-act-btn pay-edit-btn" onclick="editPayment(${p.id})">✏️</button>
+            <button class="pay-act-btn pay-del-btn"  onclick="deletePayment(${p.id})">✕</button>
+          </div>
+        </div>`;
+      }).join("")}
+    </div>`;
+}
+
+let _editingPayId=null;
+function openPayModal(p=null) {
+  _editingPayId=p?p.id:null;
+  document.getElementById("pay-modal-title").textContent=p?"✏️ Edit Payment":"➕ Add Recurring Payment";
+  document.getElementById("pay-name").value=p?p.name:"";
+  document.getElementById("pay-cat").value=p?p.cat:"🏠 Rent";
+  document.getElementById("pay-amount").value=p?p.amount:"";
+  document.getElementById("pay-due-day").value=p?p.dueDay:"";
+  document.getElementById("pay-notes").value=p?p.notes:"";
+  const aptSel=document.getElementById("pay-apt");
+  aptSel.innerHTML=state.apartments.map(a=>`<option value="${a.name}" ${p&&p.apt===a.name?"selected":""}>${a.name}</option>`).join("")
+    +`<option value="All" ${p&&p.apt==="All"?"selected":""}>All apartments</option>`;
+  selectPayBy(p?(p.paidBy||"Bobur"):"Bobur");
+  document.getElementById("pay-modal-overlay").classList.add("open");
+}
+function closePayModal(){ document.getElementById("pay-modal-overlay").classList.remove("open"); _editingPayId=null; }
+function selectPayBy(name){ document.querySelectorAll("#pay-by-toggle .bk-by-btn").forEach(b=>b.classList.toggle("active",b.dataset.name===name)); }
+function editPayment(id){ const p=state.payments.find(x=>x.id===id); if(p) openPayModal(p); }
+function deletePayment(id){ if(confirm("Remove this recurring payment?")){ state.payments=state.payments.filter(p=>p.id!==id); renderPayments(); save(); } }
+function savePayEntry(){
+  const name=document.getElementById("pay-name").value.trim();
+  const cat=document.getElementById("pay-cat").value;
+  const amount=parseFloat(document.getElementById("pay-amount").value);
+  const dueDay=parseInt(document.getElementById("pay-due-day").value);
+  const apt=document.getElementById("pay-apt").value;
+  const notes=document.getElementById("pay-notes").value.trim();
+  const paidBy=document.querySelector("#pay-by-toggle .bk-by-btn.active")?.dataset.name||"Bobur";
+  if(!name||isNaN(amount)||amount<=0||isNaN(dueDay)||dueDay<1||dueDay>31){ alert("Please fill all required fields (name, amount, due day)."); return; }
+  if(!state.payments) state.payments=[];
+  if(_editingPayId!==null){
+    const p=state.payments.find(x=>x.id===_editingPayId);
+    if(p){ p.name=name;p.cat=cat;p.amount=amount;p.dueDay=dueDay;p.apt=apt;p.notes=notes;p.paidBy=paidBy; }
+  } else {
+    state.payments.push({id:Date.now(),name,cat,amount,dueDay,apt,notes,paidBy});
+  }
+  closePayModal(); renderPayments(); renderOverview(); save();
+}
+
+// ══════════════════════════════════════════════
+// CUSTOMERS (guest database)
+// ══════════════════════════════════════════════
+function custInitials(name) {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "?";
+  if (parts.length === 1) return parts[0].slice(0,2).toUpperCase();
+  return (parts[0][0] + parts[parts.length-1][0]).toUpperCase();
+}
+
+// Match a customer record to their bookings by name (case-insensitive)
+function getBookingsForName(name) {
+  if (!state.bookings) return [];
+  const norm = name.trim().toLowerCase();
+  return state.bookings.filter(b => (b.guest||"").trim().toLowerCase() === norm);
+}
+
+function getCustomerStats(name) {
+  const bookings = getBookingsForName(name);
+  const stays = bookings.length;
+  const totalSpent = bookings.reduce((s,b) => s + (b.amount||0), 0);
+  const bookingNights = bookings.reduce((s,b) => s + Math.max(0, Math.round((b.end - b.start) / 86400000)), 0);
+  const lastStay = bookings.reduce((latest,b) => (!latest || b.end > latest) ? b.end : latest, null);
+  const platforms = [...new Set(bookings.map(b => b.platform))];
+  return { stays, totalSpent, bookingNights, lastStay, platforms };
+}
+
+// Build the unified list: saved customer records + any booking guests without a record
+function getCustomerRows() {
+  if (!state.customerHidden) state.customerHidden = [];
+  const rows = state.customers.map(c => ({ manualNights: 0, ...c, saved: true, ...getCustomerStats(c.name) }));
+  const savedNames = new Set(state.customers.map(c => c.name.trim().toLowerCase()));
+  const hiddenNames = new Set(state.customerHidden.map(n => n.trim().toLowerCase()));
+  const bookingGuestNames = [...new Set((state.bookings||[]).map(b => (b.guest||"").trim()).filter(Boolean))];
+  bookingGuestNames.forEach(name => {
+    const key = name.toLowerCase();
+    if (!savedNames.has(key) && !hiddenNames.has(key)) {
+      rows.push({ id: null, name, phone:"", email:"", notes:"", platform:"", vip:false, manualNights:0, saved:false, ...getCustomerStats(name) });
+    }
+  });
+  rows.forEach(r => { r.totalNights = r.bookingNights + (r.manualNights||0); });
+  return rows;
+}
+
+function renderCustomers() {
+  if (!state.customers) state.customers = [];
+  if (!state.customerHidden) state.customerHidden = [];
+  const rows = getCustomerRows();
+  const totalCustomers = rows.length;
+  const vipCount = rows.filter(r => r.vip).length;
+  const totalNightsAll = rows.reduce((s,r) => s + r.totalNights, 0);
+
+  document.getElementById("cust-stats").innerHTML = `
+    <div class="cust-stat"><div class="cust-stat-icon">👥</div><div class="cust-stat-label">Total Customers</div><div class="cust-stat-val">${totalCustomers}</div><div class="cust-stat-sub">guests on file</div></div>
+    <div class="cust-stat"><div class="cust-stat-icon">🌙</div><div class="cust-stat-label">Total Nights</div><div class="cust-stat-val" style="color:var(--blue)">${totalNightsAll}</div><div class="cust-stat-sub">stayed across all guests</div></div>
+    <div class="cust-stat"><div class="cust-stat-icon">⭐</div><div class="cust-stat-label">VIP Guests</div><div class="cust-stat-val" style="color:var(--orange)">${vipCount}</div><div class="cust-stat-sub">flagged as VIP</div></div>`;
+
+  const query = (document.getElementById("cust-search")?.value || "").trim().toLowerCase();
+  const filtered = query
+    ? rows.filter(r => [r.name, r.phone, r.email].some(v => (v||"").toLowerCase().includes(query)))
+    : rows;
+
+  // Sort: VIP first, then most nights, then name
+  filtered.sort((a,b) => (b.vip - a.vip) || (b.totalNights - a.totalNights) || a.name.localeCompare(b.name));
+
+
+  const container = document.getElementById("cust-list-container");
+  if (rows.length === 0) {
+    container.innerHTML = `<div class="cust-empty"><div class="cust-empty-icon">👥</div>No customers yet.<br>Click <b>+ Add Customer</b> to get started.</div>`;
+    return;
+  }
+  if (filtered.length === 0) {
+    container.innerHTML = `<div class="cust-empty"><div class="cust-empty-icon">🔍</div>No customers match "${query}".</div>`;
+    return;
+  }
+
+  container.innerHTML = `
+    <div class="cust-list">
+      ${filtered.map(r => {
+        const contact = [
+          r.phone ? `📞 ${r.phone}` : "",
+          r.email ? `✉️ ${r.email}` : "",
+        ].filter(Boolean);
+        const contactHtml = contact.length
+          ? `<div class="cust-contact">${contact.map(c=>`<span>${c}</span>`).join("")}</div>`
+          : `<div class="cust-contact-empty">${r.saved ? "No contact info on file" : "From booking history · no contact info"}</div>`;
+        const lastStayStr = r.lastStay ? r.lastStay.toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"}) : "—";
+        const actions = r.saved
+          ? `<button class="cust-act-btn cust-edit-btn" onclick="editCustomer(${r.id})">✏️ Edit</button>
+             <button class="cust-act-btn cust-del-btn" onclick="deleteCustomer(${r.id})">✕ Remove</button>`
+          : `<button class="cust-act-btn cust-add-btn" onclick="openCustomerModal(null, ${JSON.stringify(r.name)})">+ Save Contact</button>
+             <button class="cust-act-btn cust-del-btn" onclick="removeCustomerRow(${JSON.stringify(r.name)})">✕ Remove</button>`;
+        return `
+        <div class="cust-item">
+          <div class="cust-avatar ${r.vip?"vip":""}">${r.vip ? "⭐" : custInitials(r.name)}</div>
+          <div>
+            <div class="cust-name-row">
+              <div class="cust-name">${r.name}</div>
+              ${r.vip ? `<span class="cust-vip-badge">VIP</span>` : ""}
+            </div>
+            ${contactHtml}
+            ${r.notes ? `<div class="cust-contact-empty" style="font-style:normal;margin-top:4px;">📝 ${r.notes}</div>` : ""}
+          </div>
+          <div class="cust-stats">
+            <div><b>${r.totalNights}</b> night${r.totalNights===1?"":"s"} · ${r.stays} stay${r.stays===1?"":"s"}${r.manualNights?` <span style="color:var(--blue)">(+${r.manualNights} manual)</span>`:""}</div>
+            <div>Last stay: <b>${lastStayStr}</b></div>
+          </div>
+          <div class="cust-item-actions">${actions}</div>
+        </div>`;
+      }).join("")}
+    </div>`;
+}
+
+let _editingCustId = null;
+function selectCustVip(isVip) {
+  document.querySelectorAll("#cust-vip-toggle .bk-by-btn").forEach(b => b.classList.toggle("active", (b.dataset.val==="yes") === isVip));
+}
+function openCustomerModal(c=null, prefillName="") {
+  _editingCustId = c ? c.id : null;
+  document.getElementById("cust-modal-title").textContent = c ? "✏️ Edit Customer" : "➕ Add Customer";
+  document.getElementById("cust-name").value = c ? c.name : prefillName;
+  document.getElementById("cust-phone").value = c ? (c.phone||"") : "";
+  document.getElementById("cust-email").value = c ? (c.email||"") : "";
+  document.getElementById("cust-platform").value = c ? (c.platform||"") : "";
+  document.getElementById("cust-manual-nights").value = c ? (c.manualNights||0) : 0;
+  document.getElementById("cust-notes").value = c ? (c.notes||"") : "";
+  selectCustVip(c ? !!c.vip : false);
+  document.getElementById("cust-modal-overlay").classList.add("open");
+}
+function closeCustomerModal() {
+  document.getElementById("cust-modal-overlay").classList.remove("open");
+  _editingCustId = null;
+}
+function editCustomer(id) {
+  const c = state.customers.find(x => x.id === id);
+  if (c) openCustomerModal(c);
+}
+function deleteCustomer(id) {
+  if (confirm("Remove this customer record? (Their past bookings will stay in history.)")) {
+    state.customers = state.customers.filter(c => c.id !== id);
+    renderCustomers();
+    save();
+  }
+}
+function removeCustomerRow(name) {
+  if (confirm(`Remove ${name} from the customer list? (Their bookings stay in Calendar history; they'll reappear if you add a new booking under this name.)`)) {
+    if (!state.customerHidden) state.customerHidden = [];
+    state.customerHidden.push(name);
+    renderCustomers();
+    save();
+  }
+}
+function saveCustomerEntry() {
+  const name = document.getElementById("cust-name").value.trim();
+  const phone = document.getElementById("cust-phone").value.trim();
+  const email = document.getElementById("cust-email").value.trim();
+  const platform = document.getElementById("cust-platform").value;
+  const notes = document.getElementById("cust-notes").value.trim();
+  const vip = document.querySelector("#cust-vip-toggle .bk-by-btn.active")?.dataset.val === "yes";
+  let manualNights = parseInt(document.getElementById("cust-manual-nights").value);
+  if (isNaN(manualNights) || manualNights < 0) manualNights = 0;
+  if (!name) { alert("Please enter the customer's name."); return; }
+  if (!state.customers) state.customers = [];
+  if (_editingCustId !== null) {
+    const c = state.customers.find(x => x.id === _editingCustId);
+    if (c) { c.name=name; c.phone=phone; c.email=email; c.platform=platform; c.notes=notes; c.vip=vip; c.manualNights=manualNights; }
+  } else {
+    state.customers.push({ id: Date.now(), name, phone, email, platform, notes, vip, manualNights });
+  }
+  closeCustomerModal();
+  renderCustomers();
+  save();
+}
+
+// ══════════════════════════════════════════════
+// PERSISTENCE
+// ══════════════════════════════════════════════
+let saveTimer;
+// ══════════════════════════════════════════════
+// SUPABASE CLIENT
+// ══════════════════════════════════════════════
+const SUPABASE_URL = "https://qacodatdpghlkhbbtltu.supabase.co";
+const SUPABASE_KEY = "sb_publishable__w9OpuQkqYHAUySpOArfCg_Dt3wPCvp";
+const _supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const STATE_ROW  = "bm-main";
+
+function setDbStatus(ok, text) {
+  const el = document.getElementById("db-status");
+  if (!el) return;
+  el.className = "db-status" + (ok ? "" : " error");
+  el.innerHTML = `<div class="db-dot"></div> ${text}`;
+}
+
+async function save() {
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(async () => {
+    try {
+      // Serialize bookings with ISO dates
+      const payload = JSON.parse(JSON.stringify(state));
+      const { error } = await _supabase
+        .from("bm_state")
+        .upsert({ id: STATE_ROW, data: payload, updated_at: new Date().toISOString() });
+      if (error) throw error;
+      const b = document.getElementById("save-badge");
+      b.style.display = ""; setTimeout(() => b.style.display = "none", 2000);
+      setDbStatus(true, "Supabase ✓");
+    } catch(e) {
+      console.error("Save failed:", e);
+      setDbStatus(false, "Save failed ✕");
+    }
+  }, 600);
+}
+
+async function load() {
+  try {
+    const { data, error } = await _supabase
+      .from("bm_state")
+      .select("data")
+      .eq("id", STATE_ROW)
+      .maybeSingle();
+    if (error) throw error;
+    if (data && data.data) {
+      const s = data.data;
+      // Rehydrate Date objects in bookings
+      if (s.bookings) s.bookings = s.bookings.map(b => ({ ...b, start: new Date(b.start), end: new Date(b.end) }));
+      Object.assign(state, s);
+    }
+    setDbStatus(true, "Supabase ✓");
+  } catch(e) {
+    console.warn("Load failed — using defaults:", e);
+    setDbStatus(false, "DB error");
+  }
+}
+
+// ══════════════════════════════════════════════
+// BOOT
+// ══════════════════════════════════════════════
+async function boot() {
+  document.getElementById("topbar-date").textContent = new Date().toLocaleDateString("en-US", { weekday:"short", month:"short", day:"numeric" });
+  document.getElementById("loader-sub").textContent = "Loading your data…";
+  await load();
+  document.getElementById("app-loader").classList.add("hidden");
+  buildUEPage();
+  buildPFPage();
+  renderOverview();
+  renderPayments();
+  renderCustomers();
+  updateTodoBadge();
+}
+boot();
+</script>
+<!-- Apartment context menu -->
+<div id="apt-ctx-menu" class="apt-ctx-menu">
+  <button class="apt-ctx-item" onclick="aptCtxRename()">✏️ Rename apartment</button>
+  <div class="apt-ctx-divider"></div>
+  <button class="apt-ctx-item danger" id="apt-ctx-remove" onclick="aptCtxRemove()">🗑 Remove apartment</button>
+</div>
+
+<!-- Rename apartment modal -->
+<div class="bk-modal-overlay" id="rename-apt-modal">
+  <div class="bk-modal" style="max-width:360px">
+    <div class="bk-modal-title">✏️ Rename Apartment</div>
+    <div class="bk-form-row">
+      <div class="bk-form-label">New Name</div>
+      <input type="text" class="bk-form-input" id="rename-apt-input" placeholder="e.g. Apt 3 – New Town"
+        onkeydown="if(event.key==='Enter')saveAptRename()" />
+    </div>
+    <div class="bk-modal-btns">
+      <button class="btn-cancel" onclick="closeAptRenameModal()">Cancel</button>
+      <button class="btn-save" onclick="saveAptRename()">Save</button>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
